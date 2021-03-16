@@ -1,0 +1,84 @@
+*, ::before, ::after {
+    box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 10px;
+}
+
+html,body {
+    height: 100%;
+}
+
+.fd {
+    display: flex;
+}
+
+.txtCen {
+    text-align: center;
+}
+
+body {
+    flex-flow: column wrap;
+    position: relative;
+}
+
+/* header css */
+header {
+    padding: .5rem 1rem;
+    background-color: rgba(100,0,0,.5);
+    flex: 0;
+    flex-flow: row wrap;
+    justify-content: space-between;
+}
+
+header ul {
+    list-style: none;
+    display: inline-flex;
+}
+
+header ul li button {
+    outline: none;
+}
+
+header ul li button:hover {
+    cursor: pointer;
+}
+
+/* body css */
+body .mainArticle {
+    flex: 1;
+}
+
+/* main Article */
+.mainArticle .mainList li h3 {
+    padding: .25rem .5rem;
+    font-size: 2.5rem;
+    background-color: rgba(0,100,0,.5);
+}
+
+.mainList li:hover {
+    cursor: pointer;
+}
+
+/* sections */
+body .loginMenu, body .noteMenu, body .registerMenu {
+    position: fixed;
+    height: 5rem;
+    width: 5rem;
+    background-color: black;
+}
+
+body .hiddenSection {
+    visibility: hidden;
+}
+
+/* footer css */
+footer {
+    flex: 0;
+}
