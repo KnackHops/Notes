@@ -12,30 +12,34 @@ const createNote = () => {
 
 const clicked = e => {
     e.preventDefault();
-    if(e.type==="dblclick"){
-        noteClicked();
+    let btnClass = e.target.className;
+    let nodeClass = "." + (e.target.parentNode.className.replace("Btn",""));
+
+    if(btnClass!=="closeBtn"){
+        e.type=="dblclick" ?  menuClicked(".noteMenu"):menuClicked(nodeClass);
     }else{
-        if(e.target.className==="loginBtn"){
-            console.log("logging in");
-        }else{
-            console.log("registering")
-        }
+        closeBtnClicked(nodeClass);
     }
 }
 
-const noteClicked = () => {
-    const noteMenu = document.querySelector(".noteMenu");
-    noteMenu.classList.remove("hiddenSection");
+const menuClicked = nodeClass => {
+    document.querySelector(nodeClass).classList.toggle("hiddenSection");
+}
+
+const closeBtnClicked = nodeClass => {
+    document.querySelector(nodeClass).classList.toggle("hiddenSection");
 }
 
 window.onload = ()=>{
     const sections = document.querySelectorAll("body section");
-    const loginBtn = document.querySelector("ul li .loginBtn");
-    const registerBtn = document.querySelector("ul li .registerBtn");
+    const sectionBtns = document.querySelectorAll("section .closeBtn");
+    const loginMenuBtn = document.querySelector("ul .loginMenuBtn button");
+    const registerMenuBtn = document.querySelector("ul .registerMenuBtn button");
 
+    sectionBtns.forEach(btn=>btn.addEventListener("click", clicked));
     sections.forEach(section=>section.classList.add("hiddenSection"));
 
     createNote();
-    loginBtn.addEventListener("click", clicked);
-    registerBtn.addEventListener("click", clicked);
+    loginMenuBtn.addEventListener("click", clicked);
+    registerMenuBtn.addEventListener("click", clicked);
 }
