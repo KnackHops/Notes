@@ -37,6 +37,10 @@ header {
     justify-content: space-between;
 }
 
+header div h1 {
+    font-size: 4.5rem;
+}
+
 header ul {
     list-style: none;
     display: inline-flex;
@@ -71,11 +75,23 @@ body .loginMenu, body .noteMenu, body .registerMenu {
     position: fixed;
     height: 5rem;
     width: 5rem;
-    background-color: black;
+    background-color: rgba(0,0,0,.7);
+    color: white;
 }
 
 body .hiddenSection {
     visibility: hidden;
+}
+
+section .closeBtn {
+    position: absolute;
+    font-size: 2rem;
+    right: 0;
+    top: 0;
+}
+
+section .closeBtn:hover {
+    cursor: pointer;
 }
 
 /* footer css */
