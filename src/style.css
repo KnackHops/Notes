@@ -7,11 +7,8 @@
     padding: 0;
 }
 
-html {
-    font-size: 10px;
-}
-
 html,body {
+    font-size: 10px;
     height: 100%;
 }
 
@@ -71,27 +68,63 @@ body .mainArticle {
 }
 
 /* sections */
-body .loginMenu, body .noteMenu, body .registerMenu {
+body .loginRegisterMenu, body .noteMenu {
     position: fixed;
-    height: 5rem;
-    width: 5rem;
     background-color: rgba(0,0,0,.7);
     color: white;
 }
 
-body .hiddenSection {
+body .loginRegisterMenu {
+    padding: 1rem 2rem;
+    height: 15rem;
+    width: 40rem;
+    top: 30%;
+    left: 50%;
+    margin-top: -7.5rem;
+    margin-left: -20rem;
+}
+
+body .noteMenu {
+    top: 20%;
+    left: 50%;
+    margin-left: -10rem;
+    height: 15rem;
+    width: 20rem;
+}
+
+.hiddenSection {
     visibility: hidden;
 }
 
 section .closeBtn {
     position: absolute;
-    font-size: 2rem;
-    right: 0;
-    top: 0;
+    width: 0;
+    font-size: 1.5rem;
+    line-height: 1.5rem;
+}
+
+.noteMenu .closeBtn {
+    right: 1rem;
+}
+
+.loginRegisterMenu .closeBtn {
+    left: 38.9rem;
+    top: -.2rem;
 }
 
 section .closeBtn:hover {
     cursor: pointer;
+}
+
+section p {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+section p label, section p input {
+    line-height: 2.25rem;
+    font-size: 2.25rem;
 }
 
 /* footer css */
