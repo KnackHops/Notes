@@ -15,8 +15,8 @@
             </div>
             <nav>
                 <ul>
-                    <li class="loginMenuBtn"><button>Log in</button></li>
-                    <li class="registerMenuBtn"><button>Register</button></li>
+                    <li class="loginRegisterMenuBtn"><button class="loginBtn">Log in</button></li>
+                    <li class="loginRegisterMenuBtn"><button class="registerBtn">Register</button></li>
                 </ul>
             </nav>
         </header>
@@ -25,11 +25,20 @@
                 
             </ul>
         </article>
-        <section class="loginMenu">
+        <section class="loginRegisterMenu">
             <p class="closeBtn">x</p>
-        </section>
-        <section class="registerMenu">
-            <p class="closeBtn">x</p>
+            <p>
+                <label for="username">Username</label>
+                <input type="text" id="username" name="user_username">
+            </p>
+            <p>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="user_password">
+            </p>
+            <p class="emailContainer">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="user_email">
+            </p>
         </section>
         <section class="noteMenu">
             <p class="closeBtn">x</p>
