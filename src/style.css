@@ -85,11 +85,13 @@ body .loginRegisterMenu {
 }
 
 body .noteMenu {
+    padding: 1rem 2rem;
+    height: 20rem;
+    width: 35rem;
     top: 20%;
     left: 50%;
     margin-left: -10rem;
-    height: 15rem;
-    width: 20rem;
+
 }
 
 .hiddenSection {
@@ -116,7 +118,7 @@ section .closeBtn:hover {
     cursor: pointer;
 }
 
-section p {
+section p, section textarea {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -125,6 +127,7 @@ section p {
 section p label, section p input {
     line-height: 2.25rem;
     font-size: 2.25rem;
+    margin: .5rem;
 }
 
 /* footer css */
