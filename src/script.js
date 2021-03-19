@@ -13,20 +13,29 @@ const createNote = () => {
 const clicked = e => {
     e.preventDefault();
     let btnClass = e.target.className;
-    let nodeClass = "." + (e.target.parentNode.className.replace("Btn",""));
+    let nodeClass;
+
+    e.target.parentNode.className === "txtCen" ? nodeClass = ".noteMenu" : nodeClass = "." + (e.target.parentNode.className.replace("Btn",""));
 
     if(btnClass!=="closeBtn"){
-        e.type=="dblclick" ?  menuClicked(".noteMenu"):menuClicked(nodeClass,e);
+        if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
+            document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
+        }
+    
+        document.querySelectorAll("body section").forEach(section=>{
+            if(!section.classList.contains("hiddenSection")){
+                closeBtnClicked("."+section.className);
+            }
+        });
+        menuClicked(nodeClass,e.target.className);
     }else{
         closeBtnClicked(nodeClass);
     }
 }
 
-const menuClicked = (nodeClass, e=null) => {
-    if(e!==null){
-        if(e.target.className==="registerBtn"){
-            document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
-        }
+const menuClicked = (nodeClass, registerClass=null) => {
+    if(registerClass==="registerBtn"){
+        document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
     }
     document.querySelector(nodeClass).classList.toggle("hiddenSection");
 }
