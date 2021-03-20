@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="src/style.css">
         <script src="src/script.js" defer></script>
     </head>
-    <body class="fd">
+    <body class="fd fdFlow">
         <header class="fd">
             <div>
                 <h1>Notes</h1>
@@ -40,14 +40,13 @@
                 <input type="email" id="email" name="user_email">
             </p>
         </section>
-        <section class="noteMenu">
+        <section class="noteMenu fd fdFlow">
             <p class="closeBtn">x</p>
+            <input type="text" aria-label="enter title of note" name="title_box" placeholder="title">
+            <textarea name="messageBox" aria-label="enter body of note" placeholder="Write Note here"></textarea>
             <p>
-                <label for="titleBox">Title</label>
-                <input type="text" id="titleBox" name="title_box">
+                <button type="submit">Add Note</button>
             </p>
-            <textarea name="messageBox">Write Note here</textarea>
-            <button type="submit">Add Note</button>
         </section>
         <footer>
             <div  class="txtCen">

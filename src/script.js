@@ -1,13 +1,44 @@
-const createNote = () => {
+let _DATABASE_=[{title: "test", body: "testingminefam", id:"1"}];
+
+const saveNote = () => {
+    
+}
+
+const createNote = (title="Double Click here!", body=null, id=null) => {
     const ul = document.querySelector(".mainArticle ul")
     const li = document.createElement("li");
     const h3 = document.createElement("h3");
 
     li.classList = "txtCen";
-    li.addEventListener("dblclick", clicked);
-    h3.textContent = "Double Click here!";
+    h3.textContent = title;
     li.appendChild(h3);
+
+    if(id===null){
+        li.addEventListener("dblclick", clicked);
+    }else{
+        const pBody = document.createElement("p");
+        pBody.textContent = body;
+        li.appendChild(pBody);
+    }
+    
     ul.appendChild(li)
+}
+
+const removeNote = () => {
+    const lists = document.querySelectorAll(".mainArticle ul li");
+
+    lists.forEach(list => {
+        list.parentNode.removeChild(list.title, list.body);
+    })
+}
+
+const nodeLoad = () => {
+    if(_DATABASE_){
+        _DATABASE_.forEach(item=>{
+            createNote(item.title,item.body,item.id);
+        })
+    }
+    createNote();
 }
 
 const clicked = e => {
@@ -15,7 +46,7 @@ const clicked = e => {
     let btnClass = e.target.className;
     let nodeClass;
 
-    e.target.parentNode.className === "txtCen" ? nodeClass = ".noteMenu" : nodeClass = "." + (e.target.parentNode.className.replace("Btn",""));
+    e.target.parentNode.className === "txtCen" ? nodeClass = ".noteMenu"  : (e.target.parentNode.classList.contains("noteMenu") ? nodeClass = ".noteMenu" : nodeClass = "." + (e.target.parentNode.className.replace("Btn","")));
 
     if(btnClass!=="closeBtn"){
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
@@ -55,12 +86,14 @@ window.onload = ()=>{
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
     const registerInput = document.querySelector("section .emailContainer");
+    const addBtn = document.querySelector(".noteMenu p button");
 
     registerInput.classList.add("hiddenSection");
     sectionBtns.forEach(btn=>btn.addEventListener("click", clicked));
     sections.forEach(section=>section.classList.add("hiddenSection"));
 
-    createNote();
+    nodeLoad();
     loginMenuBtn.addEventListener("click", clicked);
     registerMenuBtn.addEventListener("click", clicked);
+    addBtn.addEventListener("click",saveNote);
 }
