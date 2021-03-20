@@ -16,12 +16,15 @@ html,body {
     display: flex;
 }
 
+.fdFlow {
+    flex-flow: column wrap;
+}
+
 .txtCen {
     text-align: center;
 }
 
 body {
-    flex-flow: column wrap;
     position: relative;
 }
 
@@ -90,13 +93,14 @@ body .noteMenu {
     width: 35rem;
     top: 20%;
     left: 50%;
-    margin-left: -10rem;
-
+    margin-left: -17.5rem;
 }
 
 .hiddenSection {
     visibility: hidden;
 }
+
+/* closeBtn for sections */
 
 section .closeBtn {
     position: absolute;
@@ -124,10 +128,27 @@ section p, section textarea {
     width: 100%;
 }
 
-section p label, section p input {
+section p label, section p input, section textarea, section input {
     line-height: 2.25rem;
     font-size: 2.25rem;
-    margin: .5rem;
+}
+
+/* notemenu */
+.noteMenu input {
+    line-height: 2.5rem;
+    font-size: 2.25rem;
+}
+
+.noteMenu textarea {
+    margin: .55rem 0;
+    flex: 1;
+    resize: none;
+    line-height: 2rem;
+    font-size: 1.75rem;
+}
+
+.noteMenu p button {
+    height: 2.5rem;
 }
 
 /* footer css */
