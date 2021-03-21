@@ -1,7 +1,13 @@
-let _DATABASE_=[{title: "test", body: "testingminefam", id:"1"}];
+let _DATABASE=[{title: "test", body: "testingminefam", id:0}];
+let titleInput, bodyInput;
 
-const saveNote = () => {
-    
+const saveNote = e => {
+    e.preventDefault();
+    id = _DATABASE[_DATABASE.length-1].id+1;
+    _DATABASE.push({title: titleInput, body: bodyInput, id});
+    closeBtnClicked(".noteMenu");
+    clearNotes();
+    nodeLoad();
 }
 
 const createNote = (title="Double Click here!", body=null, id=null) => {
@@ -24,17 +30,17 @@ const createNote = (title="Double Click here!", body=null, id=null) => {
     ul.appendChild(li)
 }
 
-const removeNote = () => {
+const clearNotes = () => {
     const lists = document.querySelectorAll(".mainArticle ul li");
 
     lists.forEach(list => {
-        list.parentNode.removeChild(list.title, list.body);
+        list.parentNode.removeChild(list);
     })
 }
 
 const nodeLoad = () => {
-    if(_DATABASE_){
-        _DATABASE_.forEach(item=>{
+    if(_DATABASE){
+        _DATABASE.forEach(item=>{
             createNote(item.title,item.body,item.id);
         })
     }
@@ -55,7 +61,7 @@ const clicked = e => {
     
         document.querySelectorAll("body section").forEach(section=>{
             if(!section.classList.contains("hiddenSection")){
-                closeBtnClicked("."+section.className);
+                closeBtnClicked("."+section.classList[0]);
             }
         });
         menuClicked(nodeClass,e.target.className);
@@ -76,8 +82,21 @@ const closeBtnClicked = nodeClass => {
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
         }
+        
     }
+    clearInputs(nodeClass);
     document.querySelector(nodeClass).classList.toggle("hiddenSection");
+}
+
+const clearInputs = whichNode => {
+    if(whichNode===".loginRegisterMenu"){
+        document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
+    }else{
+        document.querySelector(`${whichNode} input`).value="";
+        document.querySelector(`${whichNode} textarea`).value="";
+        titleInput = "";
+        bodyInput = "";
+    }
 }
 
 window.onload = ()=>{
@@ -87,13 +106,25 @@ window.onload = ()=>{
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
     const registerInput = document.querySelector("section .emailContainer");
     const addBtn = document.querySelector(".noteMenu p button");
+    const titleBox = document.querySelector(".noteMenu input");
+    const bodyBox = document.querySelector(".noteMenu textarea");
 
     registerInput.classList.add("hiddenSection");
     sectionBtns.forEach(btn=>btn.addEventListener("click", clicked));
     sections.forEach(section=>section.classList.add("hiddenSection"));
 
+    const insertInput = e => {
+        if(e.target.classList.contains("titleBox")){
+            titleInput = e.target.value;
+        }else if(e.target.classList.contains("bodyBox")){
+            bodyInput = e.target.value;
+        }
+    }
+
     nodeLoad();
     loginMenuBtn.addEventListener("click", clicked);
     registerMenuBtn.addEventListener("click", clicked);
     addBtn.addEventListener("click",saveNote);
+    titleBox.addEventListener("input",insertInput);
+    bodyBox.addEventListener("input",insertInput);
 }
