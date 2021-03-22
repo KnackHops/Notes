@@ -88,8 +88,8 @@ body .loginRegisterMenu {
 }
 
 body .noteMenu {
-    padding: 1rem 2rem;
-    height: 20rem;
+    padding: 1rem 1.5rem;
+    height: 25rem;
     width: 35rem;
     top: 20%;
     left: 50%;
@@ -147,8 +147,22 @@ section p label, section p input, section textarea, section input {
     font-size: 1.75rem;
 }
 
-.noteMenu p button {
-    height: 2.5rem;
+.noteMenu .extraInput {
+    width: 100%;
+    flex-flow: row wrap;
+    justify-content: space-between;
+}
+
+.noteMenu .extraInput p {
+    width: 22%;
+}
+
+.noteMenu .extraInput p label{
+    font-size: 1.5rem;
+}
+
+.noteMenu .extraInput p input{
+    line-height: 1.8rem;
 }
 
 /* footer css */
