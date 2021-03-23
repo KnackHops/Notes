@@ -1,6 +1,8 @@
 let _DATABASE=[{title: "test", body: "testingminefam", editable: true, id:0}];
 let titleInput, bodyInput;
 let editable=false;
+let clickingCheck=false;
+let currentOpen;
 
 const saveNote = () => {
     id = _DATABASE[_DATABASE.length-1].id+1;
@@ -11,7 +13,9 @@ const saveNote = () => {
 }
 
 const deleteNote = id => {
-    _DATABASE.forEach(user=>user.id===Number(id)?console.log("aye!"):console.log("nein"));
+    _DATABASE = _DATABASE.filter(user=>user.id!==Number(id));
+    clearNotes();
+    nodeLoad();
 }
 
 const createNote = (title="Double Click here!", body=null, id=null) => {
@@ -22,6 +26,8 @@ const createNote = (title="Double Click here!", body=null, id=null) => {
 
     if(title==="Double Click here!" && id){
         title="No Title";
+    }else if(title===null && id){
+        body=" ";
     }
     h3.textContent = title;
     li.appendChild(h3);
@@ -33,8 +39,26 @@ const createNote = (title="Double Click here!", body=null, id=null) => {
         li.setAttribute("id","note"+id);
         pBody.textContent = body;
         li.appendChild(pBody);
-        li.classList.add("editable");
-        li.addEventListener("click",clicked);
+        li.classList.add("userNote");
+        if(editable){
+            li.classList.add("editable");
+        }else{
+            li.classList.add("nonEditable");
+        }
+        li.addEventListener("click",e=>{
+            if(e.detail===1){
+                timer = setTimeout(()=>{
+                    clickingCheck=true;
+                    clicked(e);
+                },200)
+            }
+        });
+        li.addEventListener("dblclick",e=>{
+            if(e.detail===2 && !clickingCheck){
+                clearTimeout(timer);
+                clicked(e);
+            }
+        })
     }
     li.classList.add("txtCen");
     ul.appendChild(li)
@@ -66,13 +90,13 @@ const clicked = e => {
 
     parent.className === "txtCen" ? nodeClass = ".noteMenu"  : (parent.classList.contains("defaultNote") ? nodeClass = ".noteMenu" : nodeClass = "." + (parent.className.replace("Btn","")));
     
-    if(parent.classList.contains("deleteBtn") || btnClass==="deleteBtn" || btnClass==="addBtn"){
+    if(parent.classList.contains("userNote") || btnClass==="userNote" || btnClass==="addBtn"){
         if(btnClass!=="addBtn"){
-            btnClass="deleteBtn";
+            btnClass="userNote";
         }
     }
 
-    if(btnClass !== "closeBtn" && btnClass !=="addBtn" && btnClass !=="deleteBtn"){
+    if(btnClass !== "closeBtn" && btnClass !=="addBtn" && btnClass !=="userNote"){
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
         }
@@ -89,25 +113,61 @@ const clicked = e => {
         }else{
             window.alert("Please Enter a title or a body");
         }
-    }else if(btnClass==="deleteBtn"){
-        deleteNote(parent.id.replace("note",""));
+    }else if(btnClass==="userNote"){
+        if(e.type==="click"){
+            currentOpen=parent.id;
+            menuClicked("none",null,currentOpen);
+        }else{
+            deleteNote(parent.id.replace("note",""));
+        }
     }else{
-        closeBtnClicked("." + parent.classList[0]);
+        if(parent.classList.contains("userEdit")){
+            closeBtnClicked("."+ parent.classList[0], "aye");
+        }else{
+            closeBtnClicked("." + parent.classList[0]);
+        }
     }
 }
 
-const menuClicked = (nodeClass, registerClass=null) => {
+const menuClicked = (nodeClass, registerClass=null, userID=false) => {
     if(registerClass==="registerBtn"){
         document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
     }
-    document.querySelector(nodeClass).classList.toggle("hiddenSection");
+
+    if(!userID){
+        document.querySelector(nodeClass).classList.toggle("hiddenSection");
+    }else{
+        const addBtn = document.querySelector(".addBtn");
+        addBtn.classList.toggle("addBtn");
+        addBtn.classList.toggle("editBtn");
+        addBtn.textContent = "Edit";
+        _DATABASE.forEach(user=>{
+            if(Number(userID.replace("note","")) === user.id){
+                if(!user.editable){
+                    document.querySelector(".noteMenu input").disabled = true;
+                    document.querySelector(".noteMenu textarea").disabled = true;
+                    document.querySelector(".noteMenu .extraInput p input").checked = false;
+                    addBtn.disabled = true;
+                }
+            }
+        })
+        document.querySelector(".noteMenu").classList.toggle("userEdit");
+        document.querySelector(".noteMenu").classList.toggle("hiddenSection");
+    }
 }
 
-const closeBtnClicked = nodeClass => {
+const closeBtnClicked = (nodeClass,userEdit) => {
     if(nodeClass===".loginRegisterMenu"){
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
         }
+    }
+    if(userEdit){
+        const addBtn = document.querySelector(".editBtn");
+        addBtn.classList.toggle("editBtn");
+        addBtn.classList.toggle("addBtn");
+        addBtn.textContent = "Add Note";
+        document.querySelector(".noteMenu").classList.toggle("userEdit");
     }
     clearInputs(nodeClass);
     document.querySelector(nodeClass).classList.toggle("hiddenSection");
