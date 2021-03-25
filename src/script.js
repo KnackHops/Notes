@@ -1,15 +1,40 @@
-let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0}];
+let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
+{title: "test1", body: "testingminefam1", editable: false, id:1},
+{title: "test2", body: "testingminefam2", editable: false, id:2}];
+let new_DATABASE;
 let titleInput, bodyInput;
 let editable=false;
 let clickingCheck=false;
 let currentOpenID;
 
-const saveNote = () => {
-    id = _DATABASE[_DATABASE.length-1].id+1;
-    _DATABASE.push({title: titleInput, body: bodyInput, editable, id});
-    closeBtnClicked(".noteMenu");
+const terminal = (userEdit=false) => {
+    closeBtnClicked(".noteMenu",userEdit);
     clearNotes();
     nodeLoad();
+}
+
+const saveNote = () => {
+    if(_DATABASE.length){
+        id = _DATABASE[_DATABASE.length-1].id + 1;
+    }else{
+        id = 1;
+    }
+    _DATABASE.push({title: titleInput, body: bodyInput, editable, id});
+    terminal();
+}
+
+const editNote = () => {
+    _DATABASE.forEach(user=>{
+        if(Number(currentOpenID.replace("note",""))===user.id){
+            if(titleInput!==user.title){
+                user.title=titleInput;
+            }
+            if(bodyInput!==user.body){
+                user.body=bodyInput;
+            }
+        }
+    })
+    terminal(true);
 }
 
 const deleteNote = id => {
@@ -88,15 +113,40 @@ const clicked = e => {
     const parent = e.target.parentNode;
     let nodeClass;
 
-    parent.className === "txtCen" ? nodeClass = ".noteMenu"  : (parent.classList.contains("defaultNote") ? nodeClass = ".noteMenu" : nodeClass = "." + (parent.className.replace("Btn","")));
-    
-    if(parent.classList.contains("userNote") || btnClass==="userNote" || btnClass==="addBtn"){
-        if(btnClass!=="addBtn"){
-            btnClass="userNote";
-        }
+    if(parent.classList.contains("defaultNote")){
+        console.log(btnClass);
+        nodeClass = ".noteMenu";
+    }else if(parent.classList.contains("userNote")){
+        nodeClass="userNote";
+    }else if(btnClass==="addBtn" || btnClass==="editBtn" || btnClass==="closeBtn"){
+        nodeClass=btnClass;
+    }else{
+        nodeClass = "." + parent.className.replace("Btn","");
     }
 
-    if(btnClass !== "closeBtn" && btnClass !=="addBtn" && btnClass !=="userNote"){
+    if(nodeClass==="addBtn"){
+        if(titleInput || bodyInput){
+            console.log("ya addin")
+            saveNote();
+        }else{
+            window.alert("Please Enter a title or a body");
+        }
+    }else if(nodeClass==="editBtn"){
+        editNote();
+    }else if(nodeClass==="userNote"){
+        if(e.type==="click"){
+            currentOpenID=parent.id;
+            menuClicked("none",null,currentOpenID);
+        }else{
+            deleteNote(parent.id.replace("note",""));
+        }
+    }else if(nodeClass==="closeBtn"){
+        if(parent.classList.contains("userEdit")){
+            closeBtnClicked("."+ parent.classList[0], true);
+        }else{
+            closeBtnClicked("." + parent.classList[0]);
+        }
+    }else{
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
         }
@@ -107,25 +157,6 @@ const clicked = e => {
             }
         });
         menuClicked(nodeClass,e.target.className);
-    }else if(btnClass==="addBtn"){
-        if(titleInput || bodyInput){
-            saveNote();
-        }else{
-            window.alert("Please Enter a title or a body");
-        }
-    }else if(btnClass==="userNote"){
-        if(e.type==="click"){
-            currentOpenID=parent.id;
-            menuClicked("none",null,currentOpenID);
-        }else{
-            deleteNote(parent.id.replace("note",""));
-        }
-    }else{
-        if(parent.classList.contains("userEdit")){
-            closeBtnClicked("."+ parent.classList[0], "aye");
-        }else{
-            closeBtnClicked("." + parent.classList[0]);
-        }
     }
 }
 
@@ -135,6 +166,7 @@ const menuClicked = (nodeClass, registerClass=null, userID=false) => {
     }
 
     if(!userID){
+        activeNote(false, true);
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
     }else{
         const addBtn = document.querySelector(".addBtn");
@@ -143,13 +175,15 @@ const menuClicked = (nodeClass, registerClass=null, userID=false) => {
         addBtn.textContent = "Edit";
         _DATABASE.forEach(user=>{
             if(Number(userID.replace("note","")) === user.id){
-                document.querySelector(".noteMenu input").value = user.title;
-                document.querySelector(".noteMenu textarea").value = user.body;
+                document.querySelector(".noteMenu input").value = titleInput = user.title;
+                document.querySelector(".noteMenu textarea").value = bodyInput = user.body;
+                
                 if(!user.editable){
                     document.querySelector(".noteMenu .extraInput p input").checked = false;
                     activeNote();
                 }else{
                     document.querySelector(".noteMenu .extraInput p input").checked = true;
+                    activeNote(false, true);
                 }
             }
         })
@@ -166,12 +200,12 @@ const closeBtnClicked = (nodeClass,userEdit) => {
     }
     if(userEdit){
         const addBtn = document.querySelector(".editBtn");
-        activeNote(true);
         addBtn.classList.toggle("editBtn");
         addBtn.classList.toggle("addBtn");
         addBtn.textContent = "Add Note";
         document.querySelector(".noteMenu").classList.toggle("userEdit");
     }
+    activeNote(false,false);
     clearInputs(nodeClass);
     document.querySelector(nodeClass).classList.toggle("hiddenSection");
 }
@@ -185,14 +219,22 @@ const clearInputs = whichNode => {
         document.querySelector(`${whichNode} .extraInput p input`).checked = false;
         titleInput = "";
         bodyInput = "";
-        editable = false;
+        currentOpenID = null;
     }
 }
 
-const activeNote = (isActive = false) => {
+const activeNote = (fromEdit=false, isActive = false) => {
     document.querySelector(".noteMenu input").disabled = !isActive;
     document.querySelector(".noteMenu textarea").disabled = !isActive;
-    document.querySelector(".editBtn").disabled = !isActive;
+    if(document.querySelector(".editBtn")){
+    document.querySelector(".editBtn").disabled = !isActive;}
+    if(fromEdit){
+        _DATABASE.forEach(user => {
+        if(Number(currentOpenID.replace("note",""))===user.id){
+            user.editable = !user.editable;
+        }
+        })
+    }
 }
 
 window.onload = () =>{
@@ -221,7 +263,7 @@ window.onload = () =>{
     const checkingBox = e => {
         e.target.checked ? editable = true : editable = false;
         if(e.target.parentNode.parentNode.parentNode.classList.contains("userEdit")){
-            activeNote(editable);
+            activeNote(true,editable);
         }
     }
 
