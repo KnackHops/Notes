@@ -1,7 +1,8 @@
 let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
 {title: "test1", body: "testingminefam1", editable: false, id:1},
 {title: "test2", body: "testingminefam2", editable: false, id:2}];
-let new_DATABASE;
+
+let user_DATABASE;
 let titleInput, bodyInput;
 let editable=false;
 let clickingCheck=false;
@@ -114,11 +115,10 @@ const clicked = e => {
     let nodeClass;
 
     if(parent.classList.contains("defaultNote")){
-        console.log(btnClass);
         nodeClass = ".noteMenu";
     }else if(parent.classList.contains("userNote")){
         nodeClass="userNote";
-    }else if(btnClass==="addBtn" || btnClass==="editBtn" || btnClass==="closeBtn"){
+    }else if(btnClass==="addBtn" || btnClass==="addBtnSubmit" || btnClass==="editBtn" || btnClass==="closeBtn"){
         nodeClass=btnClass;
     }else{
         nodeClass = "." + parent.className.replace("Btn","");
@@ -134,9 +134,11 @@ const clicked = e => {
     }else if(nodeClass==="editBtn"){
         editNote();
     }else if(nodeClass==="userNote"){
+        console.log(e.type);
         if(e.type==="click"){
             currentOpenID=parent.id;
-            menuClicked("none",null,currentOpenID);
+            console.log(currentOpenID)
+            menuClicked(".noteMenu",null,currentOpenID);
         }else{
             deleteNote(parent.id.replace("note",""));
         }
@@ -146,50 +148,71 @@ const clicked = e => {
         }else{
             closeBtnClicked("." + parent.classList[0]);
         }
+    }else if(nodeClass==="addBtnSubmit"){
+        console.log("There we go");
     }else{
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
+            document.querySelector("section .emailContainer input").disabled = true;
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
         }
-    
-        document.querySelectorAll("body section").forEach(section=>{
-            if(!section.classList.contains("hiddenSection")){
-                closeBtnClicked("."+section.classList[0]);
-            }
-        });
         menuClicked(nodeClass,e.target.className);
     }
 }
 
-const menuClicked = (nodeClass, registerClass=null, userID=false) => {
-    if(registerClass==="registerBtn"){
-        document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
-    }
+const checkingOpenedFrames = () => {
+    document.querySelectorAll(".activeSection").forEach(section=>{
+        if(!section.classList.contains("hiddenSection")){
+            if(section.classList.contains("userEdit")){
+                closeBtnClicked("."+ section.classList[0], true);
+            }else{
+                closeBtnClicked("." + section.classList[0]);
+            }
+        }
+    })
+}
 
-    if(!userID){
-        activeNote(false, true);
-        document.querySelector(nodeClass).classList.toggle("hiddenSection");
-    }else{
-        const addBtn = document.querySelector(".addBtn");
-        addBtn.classList.toggle("addBtn");
-        addBtn.classList.toggle("editBtn");
-        addBtn.textContent = "Edit";
-        _DATABASE.forEach(user=>{
-            if(Number(userID.replace("note","")) === user.id){
-                document.querySelector(".noteMenu input").value = titleInput = user.title;
-                document.querySelector(".noteMenu textarea").value = bodyInput = user.body;
-                
-                if(!user.editable){
-                    document.querySelector(".noteMenu .extraInput p input").checked = false;
-                    activeNote();
-                }else{
-                    document.querySelector(".noteMenu .extraInput p input").checked = true;
-                    activeNote(false, true);
-                }
+const menuClicked = (nodeClass, registerClass=null, userID=false) => {
+
+    checkingOpenedFrames();
+
+    if(nodeClass===".loginRegisterMenu"){
+        if(registerClass==="registerBtn"){
+            document.querySelector("section p button").textContent = "Register";
+            document.querySelector("section .emailContainer input").disabled = false;
+            document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
+        }else{
+            document.querySelector("section p button").textContent = "Log in";
+        }
+        document.querySelectorAll(`${nodeClass} p  input`).forEach(inp=>{
+            if(inp.parentNode.classList[0]!==".emailContainer"){
+                inp.disabled=false;
             }
         })
-        document.querySelector(".noteMenu").classList.toggle("userEdit");
-        document.querySelector(".noteMenu").classList.toggle("hiddenSection");
-    }
+    }else{
+        if(!userID){
+            activeNote(false, true);
+        }else{
+            const addBtn = document.querySelector(".addBtn");
+            addBtn.classList.toggle("addBtn");
+            addBtn.classList.toggle("editBtn");
+            addBtn.textContent = "Edit";
+            _DATABASE.forEach(user=>{
+                if(Number(userID.replace("note","")) === user.id){
+                    document.querySelector(`${nodeClass} input`).value = titleInput = user.title;
+                    document.querySelector(`${nodeClass} textarea`).value = bodyInput = user.body;
+                    if(!user.editable){
+                        document.querySelector(`${nodeClass} .extraInput p input`).checked = false;
+                        activeNote();
+                    }else{
+                        document.querySelector(`${nodeClass} .extraInput p input`).checked = true;
+                        activeNote(false, true);
+                    }
+                }
+            })
+            document.querySelector(nodeClass).classList.toggle("userEdit");
+    }}
+    document.querySelector(nodeClass).classList.toggle("hiddenSection");
+    document.querySelector(nodeClass).classList.toggle("activeSection");
 }
 
 const closeBtnClicked = (nodeClass,userEdit) => {
@@ -197,6 +220,7 @@ const closeBtnClicked = (nodeClass,userEdit) => {
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
         }
+        document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled=true);
     }
     if(userEdit){
         const addBtn = document.querySelector(".editBtn");
@@ -207,6 +231,7 @@ const closeBtnClicked = (nodeClass,userEdit) => {
     }
     activeNote(false,false);
     clearInputs(nodeClass);
+    document.querySelector(nodeClass).classList.toggle("activeSection");
     document.querySelector(nodeClass).classList.toggle("hiddenSection");
 }
 
@@ -219,19 +244,18 @@ const clearInputs = whichNode => {
         document.querySelector(`${whichNode} .extraInput p input`).checked = false;
         titleInput = "";
         bodyInput = "";
-        currentOpenID = null;
     }
 }
 
 const activeNote = (fromEdit=false, isActive = false) => {
     document.querySelector(".noteMenu input").disabled = !isActive;
     document.querySelector(".noteMenu textarea").disabled = !isActive;
-    if(document.querySelector(".editBtn")){
-    document.querySelector(".editBtn").disabled = !isActive;}
+    document.querySelector(".noteMenu .extraInput button").disabled = !isActive;
+
     if(fromEdit){
         _DATABASE.forEach(user => {
         if(Number(currentOpenID.replace("note",""))===user.id){
-            user.editable = !user.editable;
+                user.editable = !user.editable;
         }
         })
     }
@@ -243,6 +267,7 @@ window.onload = () =>{
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
     const registerInput = document.querySelector("section .emailContainer");
+    const loginregisterFuncBtn = document.querySelector(".loginRegisterMenu p .loginregisterFuncBtn");
     const addBtn = document.querySelector(".noteMenu .extraInput .addBtn");
     const titleBox = document.querySelector(".noteMenu input");
     const bodyBox = document.querySelector(".noteMenu textarea");
@@ -271,7 +296,8 @@ window.onload = () =>{
     loginMenuBtn.addEventListener("click", clicked);
     registerMenuBtn.addEventListener("click", clicked);
     addBtn.addEventListener("click",clicked);
+    loginregisterFuncBtn.addEventListener("click",clicked);
     titleBox.addEventListener("input",insertInput);
     bodyBox.addEventListener("input",insertInput);
-    chckBox.addEventListener("change", checkingBox)
+    chckBox.addEventListener("change", checkingBox);
 }
