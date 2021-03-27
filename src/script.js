@@ -6,7 +6,7 @@ let user_DATABASE;
 let titleInput, bodyInput;
 let editable=false;
 let clickingCheck=false;
-let currentOpenID;
+let currentOpenID=null;
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
@@ -39,24 +39,30 @@ const editNote = () => {
 }
 
 const deleteNote = id => {
+    closeBtnClicked(".noteMenu",true);
     _DATABASE = _DATABASE.filter(user=>user.id!==Number(id));
     clearNotes();
     nodeLoad();
 }
 
-const createNote = (title="Double Click here!", body=null, id=null) => {
-    if(!document.querySelector(".mainArticle ul .defaultNote") || id!==null){
+const createNote = (title=null, body=null, id=null) => {
     const ul = document.querySelector(".mainArticle ul")
     const li = document.createElement("li");
     const h3 = document.createElement("h3");
 
-    if(title==="Double Click here!" && id){
-        title="No Title";
-    }else if(title===null && id){
-        body=" ";
+    if(!id && id!==0){
+        title="Double Click here!";
+    }else{
+        if(!title){
+            title="No Title";
+        }else if(!body){
+            body="Note here";
+        }
     }
+
     h3.textContent = title;
     li.appendChild(h3);
+
     if(id===null){
         li.classList.add("defaultNote");
         li.addEventListener("dblclick", clicked);
@@ -66,29 +72,11 @@ const createNote = (title="Double Click here!", body=null, id=null) => {
         pBody.textContent = body;
         li.appendChild(pBody);
         li.classList.add("userNote");
-        if(editable){
-            li.classList.add("editable");
-        }else{
-            li.classList.add("nonEditable");
-        }
-        li.addEventListener("click",e=>{
-            if(e.detail===1){
-                timer = setTimeout(()=>{
-                    clickingCheck=true;
-                    clicked(e);
-                },200)
-            }
-        });
-        li.addEventListener("dblclick",e=>{
-            if(e.detail===2 && !clickingCheck){
-                clearTimeout(timer);
-                clicked(e);
-            }
-        })
+        li.addEventListener("click",clicked);
     }
+
     li.classList.add("txtCen");
     ul.appendChild(li)
-    }
 }
 
 const clearNotes = () => {
@@ -114,19 +102,20 @@ const clicked = e => {
     const parent = e.target.parentNode;
     let nodeClass;
 
-    if(parent.classList.contains("defaultNote")){
-        nodeClass = ".noteMenu";
-    }else if(parent.classList.contains("userNote")){
-        nodeClass="userNote";
-    }else if(btnClass==="addBtn" || btnClass==="addBtnSubmit" || btnClass==="editBtn" || btnClass==="closeBtn"){
+    if(btnClass==="addBtn" || btnClass==="editBtn" || btnClass==="closeBtn" || btnClass==="delBtn" || btnClass==="loginregisterFuncBtn"){
         nodeClass=btnClass;
     }else{
-        nodeClass = "." + parent.className.replace("Btn","");
+        if(parent.classList.contains("defaultNote")){
+            nodeClass = ".noteMenu";
+        }else if(parent.classList.contains("userNote")){
+            nodeClass="userNote";
+        }else{
+            nodeClass = "." + parent.className.replace("Btn","");
+        }
     }
 
     if(nodeClass==="addBtn"){
         if(titleInput || bodyInput){
-            console.log("ya addin")
             saveNote();
         }else{
             window.alert("Please Enter a title or a body");
@@ -134,22 +123,18 @@ const clicked = e => {
     }else if(nodeClass==="editBtn"){
         editNote();
     }else if(nodeClass==="userNote"){
-        console.log(e.type);
-        if(e.type==="click"){
-            currentOpenID=parent.id;
-            console.log(currentOpenID)
-            menuClicked(".noteMenu",null,currentOpenID);
-        }else{
-            deleteNote(parent.id.replace("note",""));
-        }
+        currentOpenID=parent.id;
+        menuClicked(".noteMenu",null,currentOpenID);
     }else if(nodeClass==="closeBtn"){
         if(parent.classList.contains("userEdit")){
             closeBtnClicked("."+ parent.classList[0], true);
         }else{
             closeBtnClicked("." + parent.classList[0]);
         }
-    }else if(nodeClass==="addBtnSubmit"){
-        console.log("There we go");
+    }else if(nodeClass==="delBtn"){
+        console.log("delete", deleteNote(currentOpenID.replace("note","")));
+    }else if(nodeClass==="loginregisterFuncBtn"){
+        console.log("login or register");
     }else{
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
             document.querySelector("section .emailContainer input").disabled = true;
@@ -161,13 +146,11 @@ const clicked = e => {
 
 const checkingOpenedFrames = () => {
     document.querySelectorAll(".activeSection").forEach(section=>{
-        if(!section.classList.contains("hiddenSection")){
             if(section.classList.contains("userEdit")){
                 closeBtnClicked("."+ section.classList[0], true);
             }else{
                 closeBtnClicked("." + section.classList[0]);
             }
-        }
     })
 }
 
@@ -189,7 +172,10 @@ const menuClicked = (nodeClass, registerClass=null, userID=false) => {
             }
         })
     }else{
+        const delBtn = document.querySelector(".delBtn");
         if(!userID){
+            delBtn.classList.add("hiddenSection");
+            delBtn.disabled = true;
             activeNote(false, true);
         }else{
             const addBtn = document.querySelector(".addBtn");
@@ -209,30 +195,40 @@ const menuClicked = (nodeClass, registerClass=null, userID=false) => {
                     }
                 }
             })
+            document.querySelector(".delBtn").disabled=false;
+            delBtn.classList.remove("hiddenSection");
             document.querySelector(nodeClass).classList.toggle("userEdit");
-    }}
-    document.querySelector(nodeClass).classList.toggle("hiddenSection");
-    document.querySelector(nodeClass).classList.toggle("activeSection");
+        }
+    }
+        document.querySelector(nodeClass).classList.toggle("hiddenSection");
+        document.querySelector(nodeClass).classList.toggle("activeSection");
 }
 
-const closeBtnClicked = (nodeClass,userEdit) => {
+const closeBtnClicked = (nodeClass,userEdit,intialize=false) => {
     if(nodeClass===".loginRegisterMenu"){
         if(!document.querySelector("section .emailContainer").classList.contains("hiddenSection")){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
         }
         document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled=true);
+    }else{
+        if(userEdit){
+            const addBtn = document.querySelector(".editBtn");
+            addBtn.classList.toggle("editBtn");
+            addBtn.classList.toggle("addBtn");
+            addBtn.textContent = "Add Note";
+            document.querySelector(".noteMenu").classList.toggle("userEdit");
+        }
+        activeNote(false,false);
     }
-    if(userEdit){
-        const addBtn = document.querySelector(".editBtn");
-        addBtn.classList.toggle("editBtn");
-        addBtn.classList.toggle("addBtn");
-        addBtn.textContent = "Add Note";
-        document.querySelector(".noteMenu").classList.toggle("userEdit");
-    }
-    activeNote(false,false);
+    
     clearInputs(nodeClass);
-    document.querySelector(nodeClass).classList.toggle("activeSection");
-    document.querySelector(nodeClass).classList.toggle("hiddenSection");
+
+    if(intialize){
+        document.querySelector(nodeClass).classList.toggle("hiddenSection");
+    }else{
+        document.querySelector(nodeClass).classList.toggle("hiddenSection");
+        document.querySelector(nodeClass).classList.toggle("activeSection");
+    }
 }
 
 const clearInputs = whichNode => {
@@ -244,13 +240,15 @@ const clearInputs = whichNode => {
         document.querySelector(`${whichNode} .extraInput p input`).checked = false;
         titleInput = "";
         bodyInput = "";
+        currentOpenID=null;
     }
 }
 
 const activeNote = (fromEdit=false, isActive = false) => {
     document.querySelector(".noteMenu input").disabled = !isActive;
     document.querySelector(".noteMenu textarea").disabled = !isActive;
-    document.querySelector(".noteMenu .extraInput button").disabled = !isActive;
+    document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
+    document.querySelector(".noteMenu").classList.toggle("nonEditable");
 
     if(fromEdit){
         _DATABASE.forEach(user => {
@@ -266,16 +264,17 @@ window.onload = () =>{
     const sectionBtns = document.querySelectorAll("section .closeBtn");
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
-    const registerInput = document.querySelector("section .emailContainer");
     const loginregisterFuncBtn = document.querySelector(".loginRegisterMenu p .loginregisterFuncBtn");
-    const addBtn = document.querySelector(".noteMenu .extraInput .addBtn");
+    const addBtn = document.querySelector(".addBtn");
+    const delBtn = document.querySelector(".delBtn");
     const titleBox = document.querySelector(".noteMenu input");
     const bodyBox = document.querySelector(".noteMenu textarea");
     const chckBox = document.querySelector(".noteMenu .extraInput p input");
 
-    registerInput.classList.add("hiddenSection");
     sectionBtns.forEach(btn=>btn.addEventListener("click", clicked));
-    sections.forEach(section=>section.classList.add("hiddenSection"));
+    sections.forEach(section=>{
+        closeBtnClicked("."+section.classList[0],false,true);   
+    });
 
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
@@ -293,9 +292,11 @@ window.onload = () =>{
     }
 
     nodeLoad();
+
     loginMenuBtn.addEventListener("click", clicked);
     registerMenuBtn.addEventListener("click", clicked);
     addBtn.addEventListener("click",clicked);
+    delBtn.addEventListener("click",clicked);
     loginregisterFuncBtn.addEventListener("click",clicked);
     titleBox.addEventListener("input",insertInput);
     bodyBox.addEventListener("input",insertInput);
