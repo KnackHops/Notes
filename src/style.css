@@ -100,6 +100,10 @@ body .noteMenu {
     visibility: hidden;
 }
 
+button.hiddenSection {
+    width: 0;
+}
+
 /* closeBtn for sections */
 
 section .closeBtn {
@@ -156,7 +160,6 @@ section p label, section p input, section textarea, section input {
 .noteMenu .extraInput p {
     width: 22%;
 }
-
 .noteMenu .extraInput p label{
     font-size: 1.5rem;
 }
