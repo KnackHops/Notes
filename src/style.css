@@ -126,10 +126,31 @@ section .closeBtn:hover {
     cursor: pointer;
 }
 
-section p, section textarea {
+section p, .noteMenu textarea {
     display: flex;
+    position: relative;
     justify-content: space-between;
     width: 100%;
+}
+
+.registerRN p:nth-child(2):hover:after, .registerRN .focusTT:nth-child(2):after{
+   position: absolute;
+   right: 0;
+   bottom: 100%;
+   font-size: 1.15rem;
+   padding: .25rem .5rem;
+   background-color: grey;
+   content: "6 characters minimum";
+}
+
+.registerRN p:nth-child(3):hover:after, .registerRN .focusTT:nth-child(3):after{
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    font-size: 1rem;
+    padding: .25rem .5rem;
+    background-color: grey;
+    content: "6 characters minimum. One uppercase character.";
 }
 
 section p label, section p input, section textarea, section input {
