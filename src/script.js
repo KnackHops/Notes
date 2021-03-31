@@ -27,7 +27,7 @@ const logInUserValidate = () => {
         alert("Please fill out area");
     }else{
         user_DATABASE.forEach(user=>{
-            if(user.username === userName){
+            if(user.username === userName.toLowerCase()){
                 if(user.password === userPass){
                     returnVar = user.username;
                 }
@@ -58,13 +58,13 @@ const registerUserValidate = () =>{
         returnVar=false;
         alert("Please fill out every textbox");
     }else{
-        if(userPass.length<=4){
+        if(!passwordCheck(userPass)){
             returnVar=false;
-            alert("Password needs to be 6 characters or more");
+            alert("Password needs to be 6 characters or longer and have one uppercase letter");
         }else{
-            if(userName.length<=4){
+            if(userName.length<=5){
                 returnVar=false;
-                alert("Username needs to be 6 characters or more")
+                alert("Username needs to be 6 characters or longer")
             }else{
                 user_DATABASE.forEach(user=>{
                     if(user.username===userName){
@@ -84,9 +84,36 @@ const registerUserValidate = () =>{
     return returnVar;
 }
 
+const passwordCheck = pass => {
+    let returnVar = true;
+    let upperCount = 0;
+    let lowerCount = 0;
+
+    if(pass.length<=5){
+        returnVar = false;
+    }else{
+        [...pass].forEach(lett => {
+            if(lett.toLowerCase() !== lett.toUpperCase()){
+                if(lett === lett.toUpperCase()){
+                    upperCount++;
+                }
+                if(lett === lett.toLowerCase()){
+                    lowerCount++;
+                }
+            }
+        });
+        if(lowerCount<1 || upperCount<1){
+            returnVar = false;
+        }
+    }
+
+
+    return returnVar;
+}
+
 const registerUser = () => {
     let newUser = {
-        username: userName,
+        username: userName.toLowerCase(),
         password: userPass,
         email: userEmail
     }
