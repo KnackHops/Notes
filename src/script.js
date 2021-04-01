@@ -266,7 +266,7 @@ const clicked = e => {
     }else if(nodeClass==="loginregisterFuncBtn"){
         userTerminal();
     }else if(nodeClass==="userPanelBtn"){
-        console.log("hello", currentUser);
+        activePanel("." + nodeClass.replace("Btn",""));
     }else{
         menuClicked(nodeClass,e.target.className);
     }
@@ -350,7 +350,7 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         }
         activeNote(false,false);
     }
-    
+
     clearInputs(nodeClass);
 
     if(initialize){
@@ -390,9 +390,25 @@ const activeNote = (fromEdit=false, isActive = false) => {
     }
 }
 
+const activePanel = navClass => {
+    const navNode = document.querySelector(navClass);
+
+    if(navNode.classList.contains("panelActive")){
+        navNode.classList.toggle("panelActive");
+        navNode.classList.toggle("panelInactive");
+    }else{
+        if(navNode.classList.contains("panelInactive")){
+            navNode.classList.toggle("panelActive");
+        }
+        navNode.classList.toggle("panelInactive");
+    }
+    
+}
+
 window.onload = () =>{
     const sections = document.querySelectorAll("body section");
     const sectionCloseBtns = document.querySelectorAll("section .closeBtn");
+    const userPanel = document.querySelector("nav .userPanel");
     //loginRegister
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
@@ -408,7 +424,7 @@ window.onload = () =>{
     const chckBox = document.querySelector(".noteMenu .extraInput p input");
 
     sectionCloseBtns.forEach(btn=>btn.addEventListener("click", clicked));
-
+    activePanel("." + userPanel.classList[0]);
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,true);   
     });

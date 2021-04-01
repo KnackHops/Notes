@@ -41,9 +41,65 @@ header div h1 {
     font-size: 4.5rem;
 }
 
+nav {
+    position: relative;
+    z-index: 5;
+}
+
+nav ul {
+    z-index: 5;
+}
+
+nav ul li {
+    z-index: 3;
+}
+
 header ul {
     list-style: none;
     display: inline-flex;
+}
+
+nav .userPanel {
+    align-items: center;
+    position: absolute;
+    background-color: rgba(0,0,0,.5);
+    padding: .5rem 0;
+    width: 8.5rem;
+    left: -15rem;
+    transition: all .2s;
+    opacity: 0;
+}
+
+nav .userPanel.panelInactive {
+    z-index: 0;
+    left: -4rem;
+    transform: translateY(2rem);
+}
+
+nav .userPanel.panelActive {
+    opacity: 1;
+    left: -4rem;
+    transform: translateY(4rem);
+}
+
+nav .userPanel li {
+    margin: .1rem 0;
+    width: 8rem;
+}
+
+nav .userPanel li button {
+    border-radius: .5rem;
+    border: none;
+    outline: none;
+    color: white;
+    box-shadow: .2px 1px 5px white;
+    background-color: rgba(255,255,255,.2);
+    width: 100%;
+}
+
+nav .userPanel li button:hover {
+    background-color: white;
+    color: black;
 }
 
 header ul li button {
