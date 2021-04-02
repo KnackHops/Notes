@@ -40,15 +40,24 @@ const logInUserValidate = () => {
     return returnVar;
 }
 
-const logInUser = () => {
+const userLogInOut = (loggingIn = true) => {
     const btn1 = document.querySelector(".loginBtn");
-    const btn2 = document.querySelector(".registerBtn");
+    const btn2 = document.querySelector(".loginRegisterMenuBtn:nth-child(2) button");
+    const userPanel = document.querySelector("nav .userPanel");
 
-    btn1.disabled = true;
+    userPanel.classList.toggle("animAct");
+
+    btn1.disabled = loggingIn;
     btn1.classList.toggle("hiddenSection");
     btn2.classList.toggle("registerBtn");
     btn2.classList.toggle("userPanelBtn");
-    btn2.textContent = currentUser;
+
+    if(loggingIn){
+        btn2.textContent = currentUser
+    }else{
+        checkingOpenedFrames();
+        btn2.textContent = "Register";
+    }
 }
 
 const registerUserValidate = () =>{
@@ -126,7 +135,7 @@ const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
         currentUser = logInUserValidate();
         if(currentUser){
-            logInUser();
+            userLogInOut();
             closeBtnClicked(".loginRegisterMenu");
         }else{
             currentUser=null;
@@ -230,7 +239,13 @@ const clicked = e => {
     const parent = e.target.parentNode;
     let nodeClass;
 
-    if(btnClass==="addBtn" || btnClass==="editBtn" || btnClass==="closeBtn" || btnClass==="delBtn" || btnClass==="loginregisterFuncBtn" || btnClass==="userPanelBtn"){
+    if(btnClass==="addBtn" 
+    || btnClass==="editBtn" 
+    || btnClass==="closeBtn" 
+    || btnClass==="delBtn"  
+    || btnClass==="loginregisterFuncBtn" 
+    || btnClass==="userPanelBtn" 
+    || btnClass==="logOutBtn"){
         nodeClass=btnClass;
     }else{
         if(parent.classList.contains("defaultNote")){
@@ -238,7 +253,11 @@ const clicked = e => {
         }else if(parent.classList.contains("userNote")){
             nodeClass="userNote";
         }else{
-            nodeClass = "." + parent.className.replace("Btn","");
+            if(btnClass==="userSettingsBtn"){
+                nodeClass = "." + btnClass.replace("Btn", "");
+            }else{
+                nodeClass = "." + parent.className.replace("Btn","");
+            }
         }
     }
 
@@ -264,9 +283,14 @@ const clicked = e => {
             deleteNote(currentOpenID.replace("note",""))
         }
     }else if(nodeClass==="loginregisterFuncBtn"){
+        //log in button
         userTerminal();
     }else if(nodeClass==="userPanelBtn"){
-        activePanel("." + nodeClass.replace("Btn",""));
+        activePanel();
+    }else if(nodeClass==="logOutBtn"){
+        //log out button
+        userLogInOut(false);
+        activePanel();
     }else{
         menuClicked(nodeClass,e.target.className);
     }
@@ -299,7 +323,7 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
                 inp.disabled=false;
             }
         })
-    }else{
+    }else if (nodeClass===".noteMenu"){
         const delBtn = document.querySelector(".delBtn");
         if(!noteID){
             delBtn.classList.add("hiddenSection");
@@ -340,7 +364,7 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             initialize ? "" : document.querySelector(nodeClass).classList.toggle("registerRN");
         }
         document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled=true);
-    }else{
+    }else if(nodeClass===".noteMenu"){
         if(userEdit){
             const addBtn = document.querySelector(".editBtn");
             addBtn.classList.toggle("editBtn");
@@ -350,8 +374,9 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         }
         activeNote(false,false);
     }
-
-    clearInputs(nodeClass);
+    if(nodeClass!==".userSettings"){
+        clearInputs(nodeClass);
+    }
 
     if(initialize){
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
@@ -376,6 +401,7 @@ const clearInputs = whichNode => {
 }
 
 const activeNote = (fromEdit=false, isActive = false) => {
+
     document.querySelector(".noteMenu input").disabled = !isActive;
     document.querySelector(".noteMenu textarea").disabled = !isActive;
     document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
@@ -390,8 +416,8 @@ const activeNote = (fromEdit=false, isActive = false) => {
     }
 }
 
-const activePanel = navClass => {
-    const navNode = document.querySelector(navClass);
+const activePanel = () => {
+    const navNode = document.querySelector("nav .userPanel");
 
     if(navNode.classList.contains("panelActive")){
         navNode.classList.toggle("panelActive");
@@ -408,7 +434,8 @@ const activePanel = navClass => {
 window.onload = () =>{
     const sections = document.querySelectorAll("body section");
     const sectionCloseBtns = document.querySelectorAll("section .closeBtn");
-    const userPanel = document.querySelector("nav .userPanel");
+    const logOutBtn = document.querySelector(".userPanel li .logOutBtn");
+    const userSettings = document.querySelector(".userSettingsBtn");
     //loginRegister
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
@@ -423,8 +450,7 @@ window.onload = () =>{
     const bodyBox = document.querySelector(".noteMenu textarea");
     const chckBox = document.querySelector(".noteMenu .extraInput p input");
 
-    sectionCloseBtns.forEach(btn=>btn.addEventListener("click", clicked));
-    activePanel("." + userPanel.classList[0]);
+    activePanel();
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,true);   
     });
@@ -456,7 +482,7 @@ window.onload = () =>{
 
     nodeLoad();
 
-    [loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn].forEach(item=>item.addEventListener("click",clicked));
+    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, bodyBox].forEach(item=>item.addEventListener("input",insertInput));
 
     //loginregister
