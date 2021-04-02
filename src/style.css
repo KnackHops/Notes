@@ -66,8 +66,11 @@ nav .userPanel {
     padding: .5rem 0;
     width: 8.5rem;
     left: -15rem;
-    transition: all .2s;
     opacity: 0;
+}
+
+.userPanel.animAct {
+    transition: all .2s;
 }
 
 nav .userPanel.panelInactive {
@@ -127,7 +130,7 @@ body .mainArticle {
 }
 
 /* sections */
-body .loginRegisterMenu, body .noteMenu {
+body .loginRegisterMenu, body .noteMenu, body .userSettings {
     position: fixed;
     background-color: rgba(0,0,0,.7);
     color: white;
@@ -243,6 +246,15 @@ section p label, section p input, section textarea, section input {
 
 .noteMenu .extraInput p input{
     line-height: 1.8rem;
+}
+
+/* user settings */
+.userSettings {
+    height: 10rem;
+    width: 10rem;
+    
+    left: calc(50% - 5rem);
+    top: calc(20% - 5rem);
 }
 
 /* footer css */
