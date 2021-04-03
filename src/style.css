@@ -118,6 +118,20 @@ body .mainArticle {
     flex: 1;
 }
 
+.pfpContainer {
+    background-color: rgba(255,255,255,.2);
+    border-radius: 50%;
+}
+
+.pfp {
+    object-fit: cover;
+    margin-top: 5%;
+    margin-left: 5%;
+    height: 90%;
+    width: 90%;
+    border-radius: 50%;
+}
+
 /* main Article */
 .mainArticle .mainList li h3 {
     padding: .25rem .5rem;
@@ -140,10 +154,8 @@ body .loginRegisterMenu {
     padding: 1rem 2rem;
     height: 15rem;
     width: 40rem;
-    top: 30%;
-    left: 50%;
-    margin-top: -7.5rem;
-    margin-left: -20rem;
+    top: calc(30% - 7.5rem);
+    left: calc(50% - 20rem);
 }
 
 body .noteMenu {
@@ -151,8 +163,16 @@ body .noteMenu {
     height: 25rem;
     width: 35rem;
     top: 20%;
-    left: 50%;
-    margin-left: -17.5rem;
+    left: calc(50% - 17.5rem);
+}
+
+
+body .userSettings {
+    padding: 1rem 1.5rem;
+    height: 30rem;
+    width: 50rem;
+    left: calc(50% - 25rem);
+    top: calc(20% - 5rem);
 }
 
 .hiddenSection {
@@ -249,12 +269,16 @@ section p label, section p input, section textarea, section input {
 }
 
 /* user settings */
-.userSettings {
-    height: 10rem;
-    width: 10rem;
-    
-    left: calc(50% - 5rem);
-    top: calc(20% - 5rem);
+
+.userSettings .closeBtn {
+    right: 1rem;
+}
+
+
+.userSettings p .pfpContainer {
+    display: inline-block;
+    height: 8rem;
+    width: 8rem;
 }
 
 /* footer css */
