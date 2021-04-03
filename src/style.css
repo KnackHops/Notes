@@ -168,12 +168,29 @@ body .noteMenu {
 
 
 body .userSettings {
-    padding: 1rem 1.5rem;
-    height: 30rem;
-    width: 50rem;
-    left: calc(50% - 25rem);
+    padding: 1rem 1rem;
+    height: 25rem;
+    width: 40rem;
+    left: calc(50% - 20rem);
     top: calc(20% - 5rem);
 }
+
+.loginRegisterMenu p, .noteMenu p, .userSettings p, .noteMenu textarea {
+    display: flex;
+    position: relative;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.userSettings p:nth-child(3) {
+    justify-content: start;
+}
+
+section p label, section p input, section textarea, section input {
+    line-height: 2.25rem;
+    font-size: 2.25rem;
+}
+
 
 .hiddenSection {
     visibility: hidden;
@@ -205,13 +222,7 @@ section .closeBtn:hover {
     cursor: pointer;
 }
 
-section p, .noteMenu textarea {
-    display: flex;
-    position: relative;
-    justify-content: space-between;
-    width: 100%;
-}
-
+/* loginRegisterMenu*/
 .registerRN p:nth-child(2):hover:after, .registerRN .focusTT:nth-child(2):after{
    position: absolute;
    right: 0;
@@ -230,11 +241,6 @@ section p, .noteMenu textarea {
     padding: .25rem .5rem;
     background-color: grey;
     content: "6 characters minimum. One uppercase character.";
-}
-
-section p label, section p input, section textarea, section input {
-    line-height: 2.25rem;
-    font-size: 2.25rem;
 }
 
 /* notemenu */
@@ -269,16 +275,46 @@ section p label, section p input, section textarea, section input {
 }
 
 /* user settings */
-
 .userSettings .closeBtn {
+    top: 0;
     right: 1rem;
 }
 
+.userSettings p {
+    align-items: center;
+}
+
+.userSettings p label, input {
+    line-height: 2rem;
+    font-size: 2rem;
+}
+
+.userSettings p:nth-child(3) label {
+    margin-left: 1rem;
+    padding: .25rem 1rem;
+    border-radius: 1rem;
+    background-color: rgba(255,255,255,.2);
+}
 
 .userSettings p .pfpContainer {
     display: inline-block;
     height: 8rem;
     width: 8rem;
+}
+
+.userSettings P #userpfpInput {
+    position: fixed;
+    right: 100%;
+    visibility: hidden;
+}
+
+.userSettings p {
+    margin-bottom: 1rem;
+}
+
+.userSettings p:last-child {
+    margin-top: auto;
+    margin-bottom: 0;
 }
 
 /* footer css */
