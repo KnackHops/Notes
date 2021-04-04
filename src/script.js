@@ -1,3 +1,6 @@
+const _ISLOGGEDKEY = "notesIsLogged";
+const _USERLOGGEDKEY = "notesUserLogged";
+
 let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
 {title: "test1", body: "testingminefam1", editable: false, id:1},
 {title: "test2", body: "testingminefam2", editable: false, id:2}];
@@ -134,6 +137,7 @@ const registerUser = () => {
 const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
         currentUser = logInUserValidate();
+        accountLogged();
         if(currentUser){
             userLogInOut();
             closeBtnClicked(".loginRegisterMenu");
@@ -289,6 +293,7 @@ const clicked = e => {
         activePanel();
     }else if(nodeClass==="logOutBtn"){
         //log out button
+        accountLogged(false);
         userLogInOut(false);
         activePanel();
     }else{
@@ -431,11 +436,27 @@ const activePanel = () => {
     
 }
 
+const changePfP = e => {
+    document.querySelector(".userSettings p .pfpContainer img").src = e.target.value
+}
+
+const checkLoggedAccount = () => {
+    const isLogged = (localStorage.getItem(_ISLOGGEDKEY)==="true");
+    if(isLogged){
+        currentUser = localStorage.getItem(_USERLOGGEDKEY);
+        userLogInOut();
+    }
+}
+
+const accountLogged = (isLogged = true) => {
+    localStorage.setItem(_ISLOGGEDKEY, isLogged);
+    isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser) : localStorage.removeItem(_USERLOGGEDKEY);
+}
+
 window.onload = () =>{
     const sections = document.querySelectorAll("body section");
     const sectionCloseBtns = document.querySelectorAll("section .closeBtn");
     const logOutBtn = document.querySelector(".userPanel li .logOutBtn");
-    const userSettings = document.querySelector(".userSettingsBtn");
     //loginRegister
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
@@ -449,6 +470,9 @@ window.onload = () =>{
     const titleBox = document.querySelector(".noteMenu input");
     const bodyBox = document.querySelector(".noteMenu textarea");
     const chckBox = document.querySelector(".noteMenu .extraInput p input");
+    //userSettings
+    const userSettings = document.querySelector(".userSettingsBtn");
+    const userpfpInput = document.querySelector("#userpfpInput");
 
     activePanel();
     sections.forEach(section=>{
@@ -480,8 +504,6 @@ window.onload = () =>{
         e.target.parentNode.classList.toggle("focusTT");
     }
 
-    nodeLoad();
-
     [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, bodyBox].forEach(item=>item.addEventListener("input",insertInput));
 
@@ -492,4 +514,9 @@ window.onload = () =>{
     passwordInput.addEventListener("blur",focusedTT);
     //note
     chckBox.addEventListener("change", checkingBox);
+    //userSettings
+    userpfpInput.addEventListener("change", changePfP);
+
+    checkLoggedAccount();
+    nodeLoad();
 }
