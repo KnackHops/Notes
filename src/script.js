@@ -8,7 +8,8 @@ let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
 let user_DATABASE=[{
     username: "affafu",
     password: "affafuPass",
-    email: "affafu@gmail.com"}];
+    email: "affafu@gmail.com",
+    pfp: "default"}];
 
 let titleInput, bodyInput;
 let userName, userPass, userEmail;
@@ -356,6 +357,16 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             delBtn.classList.remove("hiddenSection");
             document.querySelector(nodeClass).classList.toggle("userEdit");
         }
+    }else if (nodeClass===".userSettings"){
+        user_DATABASE.forEach(user=>{
+            if(user.username === currentUser){
+                if(user.pfp === "default"){
+                    pfpEditCheck(false)
+                }else{
+                    pfpEditCheck(true);
+                }
+            }
+        })
     }
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
@@ -437,20 +448,73 @@ const activePanel = () => {
 }
 
 const changePfP = e => {
-    document.querySelector(".userSettings p .pfpContainer img").src = e.target.value
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = e => {
+        if(e.target.result){
+            let fileStr = e.target.result.split(",");
+            if(fileStr[0].includes("data:image/")){
+                if(!fileStr[0].includes("gif")){
+                    document.querySelector(".userSettings p .pfpContainer img").src=e.target.result;
+                    pfpEditCheck(true);
+                }else{
+                    console.log("gif are prohibited")
+                }
+            }else{
+                console.log("not an image");
+            }
+        }
+    }
+
+    reader.onerror = e => {
+        console.log(e.target.result);
+    }
+
+    reader.readAsDataURL(file);
 }
 
 const checkLoggedAccount = () => {
     const isLogged = (localStorage.getItem(_ISLOGGEDKEY)==="true");
     if(isLogged){
-        currentUser = localStorage.getItem(_USERLOGGEDKEY);
-        userLogInOut();
+        user_DATABASE.forEach(user =>{
+            if(user.username===localStorage.getItem(_USERLOGGEDKEY)){
+                currentUser = localStorage.getItem(_USERLOGGEDKEY);
+            }
+        })
+        if(currentUser){
+            userLogInOut();
+        }else{
+            currentUser=null;
+            localStorage.removeItem(_USERLOGGEDKEY);
+        }
     }
 }
 
 const accountLogged = (isLogged = true) => {
     localStorage.setItem(_ISLOGGEDKEY, isLogged);
     isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser) : localStorage.removeItem(_USERLOGGEDKEY);
+}
+
+const pfpRemove = e => {
+    let ans = confirm("are you sure?");
+    if(ans){
+        document.querySelector(".userSettings p .pfpContainer img").src="pfpAlt.PNG";
+        pfpEditCheck(false);
+    }
+}
+
+const pfpEditCheck = (userPfpEditable = false) => {
+    const pfpCon = document.querySelector(".userSettings p .pfpContainer");
+    if(userPfpEditable){
+        if(!pfpCon.classList.contains("pfpClickable")){
+            pfpCon.classList.add("pfpClickable");
+            pfpCon.addEventListener("click", pfpRemove);
+        }
+    }else{
+        pfpCon.classList.remove("pfpClickable");
+        pfpCon.removeEventListener("click",pfpRemove);
+    }
 }
 
 window.onload = () =>{
@@ -473,7 +537,7 @@ window.onload = () =>{
     //userSettings
     const userSettings = document.querySelector(".userSettingsBtn");
     const userpfpInput = document.querySelector("#userpfpInput");
-
+    
     activePanel();
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,true);   

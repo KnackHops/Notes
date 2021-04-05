@@ -119,9 +119,32 @@ body .mainArticle {
 }
 
 .pfpContainer {
+    position: relative;
     background-color: rgba(255,255,255,.2);
     border-radius: 50%;
 }
+
+.pfpContainer.pfpClickable:hover:before {
+    position: absolute;
+    content: "";
+    height: 100%;
+    width: 100%;
+    border-radius: 50%;
+    background-color: rgba(255,255,255,.2);
+}
+
+.userSettings p .pfpContainer.pfpClickable:hover:after{
+    position: absolute;
+    content: "x";
+    top: 5%;
+    left: 5%;
+    height: 90%;
+    width: 90%;
+    border-radius: 50%;
+    font-size: 5rem;
+    text-align: center;
+}
+
 
 .pfp {
     object-fit: cover;
@@ -130,6 +153,7 @@ body .mainArticle {
     height: 90%;
     width: 90%;
     border-radius: 50%;
+    font-size: 20px;
 }
 
 /* main Article */
@@ -193,7 +217,12 @@ section p label, section p input, section textarea, section input {
 
 
 .hiddenSection {
+    z-index: 0;
     visibility: hidden;
+}
+
+.activeSection {
+    z-index: 7;
 }
 
 button.hiddenSection {
