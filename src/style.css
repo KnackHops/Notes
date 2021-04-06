@@ -61,11 +61,11 @@ header ul {
 
 nav .userPanel {
     align-items: center;
-    position: absolute;
+    position: fixed;
     background-color: rgba(0,0,0,.5);
     padding: .5rem 0;
     width: 8.5rem;
-    left: -15rem;
+    right: -20rem;
     opacity: 0;
 }
 
@@ -75,13 +75,13 @@ nav .userPanel {
 
 nav .userPanel.panelInactive {
     z-index: 0;
-    left: -4rem;
+    right: 1rem;
     transform: translateY(2rem);
 }
 
 nav .userPanel.panelActive {
     opacity: 1;
-    left: -4rem;
+    right: 1rem;
     transform: translateY(4rem);
 }
 

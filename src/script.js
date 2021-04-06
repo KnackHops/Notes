@@ -1,5 +1,6 @@
 const _ISLOGGEDKEY = "notesIsLogged";
 const _USERLOGGEDKEY = "notesUserLogged";
+const _DEFAULTPFP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAABeCAYAAAA336rmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADlSURBVHhe7dExAQAwDMCgCWj9y+1scORAAW9mL4YyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpg7H3AU/beRBUx2yaAAAAAElFTkSuQmCC";
 
 let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
 {title: "test1", body: "testingminefam1", editable: false, id:1},
@@ -7,16 +8,24 @@ let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
 
 let user_DATABASE=[{
     username: "affafu",
-    password: "affafuPass",
     email: "affafu@gmail.com",
-    pfp: "default"}];
+    pfp: "default",
+    nickname: null
+}];
+
+let login_DATABASE=[{
+    username: "affafu",
+    password: "affafuPass",
+}]
 
 let titleInput, bodyInput;
 let userName, userPass, userEmail;
+let pfpNickName;
 let editable = false;
 let clickingCheck = false;
 let currentOpenID = null;
 let currentUser = null;
+let currentFile = null;
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
@@ -30,7 +39,7 @@ const logInUserValidate = () => {
     if(!userName||!userPass){
         alert("Please fill out area");
     }else{
-        user_DATABASE.forEach(user=>{
+        login_DATABASE.forEach(user=>{
             if(user.username === userName.toLowerCase()){
                 if(user.password === userPass){
                     returnVar = user.username;
@@ -57,7 +66,11 @@ const userLogInOut = (loggingIn = true) => {
     btn2.classList.toggle("userPanelBtn");
 
     if(loggingIn){
-        btn2.textContent = currentUser
+        user_DATABASE.forEach(user=>{
+            if(user.username===currentUser){
+                user.nickname ? btn2.textContent = user.nickname : btn2.textContent = currentUser;
+            }
+        })
     }else{
         checkingOpenedFrames();
         btn2.textContent = "Register";
@@ -127,19 +140,24 @@ const passwordCheck = pass => {
 const registerUser = () => {
     let newUser = {
         username: userName.toLowerCase(),
-        password: userPass,
-        email: userEmail
+        email: userEmail,
+        pfp: "default",
+        nickname: null
     }
 
     user_DATABASE.push(newUser);
+    login_DATABASE.push({
+        username: userName.toLowerCase(),
+        password: userPass
+    })
     confirm("User Registered!");
 }
 
 const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
         currentUser = logInUserValidate();
-        accountLogged();
         if(currentUser){
+            accountLogged(true);
             userLogInOut();
             closeBtnClicked(".loginRegisterMenu");
         }else{
@@ -250,7 +268,8 @@ const clicked = e => {
     || btnClass==="delBtn"  
     || btnClass==="loginregisterFuncBtn" 
     || btnClass==="userPanelBtn" 
-    || btnClass==="logOutBtn"){
+    || btnClass==="logOutBtn"
+    || btnClass==="saveProfileBtn"){
         nodeClass=btnClass;
     }else{
         if(parent.classList.contains("defaultNote")){
@@ -297,6 +316,8 @@ const clicked = e => {
         accountLogged(false);
         userLogInOut(false);
         activePanel();
+    }else if(nodeClass==="saveProfileBtn"){
+        saveProfile();
     }else{
         menuClicked(nodeClass,e.target.className);
     }
@@ -360,9 +381,16 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
     }else if (nodeClass===".userSettings"){
         user_DATABASE.forEach(user=>{
             if(user.username === currentUser){
+                user.nickname? pfpNickChange(user.nickname) : pfpNickChange();
                 if(user.pfp === "default"){
-                    pfpEditCheck(false)
+                    pfpChange(_DEFAULTPFP);
+                    pfpEditCheck(false);
                 }else{
+                    user_DATABASE.forEach(user=>{
+                        if(user.username === currentUser){
+                            pfpChange(user.pfp);
+                        }
+                    })
                     pfpEditCheck(true);
                 }
             }
@@ -373,14 +401,14 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
 }
 
 const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
-    if(nodeClass===".loginRegisterMenu"){
+    if(nodeClass === ".loginRegisterMenu"){
         if(document.querySelector(nodeClass).classList.contains("registerRN") || initialize){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
             document.querySelector("section .emailContainer input").disabled = true;
             initialize ? "" : document.querySelector(nodeClass).classList.toggle("registerRN");
         }
         document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled=true);
-    }else if(nodeClass===".noteMenu"){
+    }else if(nodeClass === ".noteMenu"){
         if(userEdit){
             const addBtn = document.querySelector(".editBtn");
             addBtn.classList.toggle("editBtn");
@@ -389,10 +417,11 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             document.querySelector(".noteMenu").classList.toggle("userEdit");
         }
         activeNote(false,false);
+    }else if(nodeClass === ".userSettings"){
+        pfpChange("");
     }
-    if(nodeClass!==".userSettings"){
-        clearInputs(nodeClass);
-    }
+
+    clearInputs(nodeClass);
 
     if(initialize){
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
@@ -405,6 +434,9 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
 const clearInputs = whichNode => {
     if(whichNode===".loginRegisterMenu"){
         document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
+    }else if(whichNode===".userSettings"){
+        pfpRemove(null);
+        pfpNickChange(null);
     }else{
         document.querySelector(`${whichNode} input`).value="";
         document.querySelector(`${whichNode} textarea`).value="";
@@ -447,41 +479,14 @@ const activePanel = () => {
     
 }
 
-const changePfP = e => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onload = e => {
-        if(e.target.result){
-            let fileStr = e.target.result.split(",");
-            if(fileStr[0].includes("data:image/")){
-                if(!fileStr[0].includes("gif")){
-                    document.querySelector(".userSettings p .pfpContainer img").src=e.target.result;
-                    pfpEditCheck(true);
-                }else{
-                    console.log("gif are prohibited")
-                }
-            }else{
-                console.log("not an image");
-            }
-        }
-    }
-
-    reader.onerror = e => {
-        console.log(e.target.result);
-    }
-
-    reader.readAsDataURL(file);
-}
-
 const checkLoggedAccount = () => {
-    const isLogged = (localStorage.getItem(_ISLOGGEDKEY)==="true");
-    if(isLogged){
+    if(localStorage.getItem(_USERLOGGEDKEY)){
         user_DATABASE.forEach(user =>{
             if(user.username===localStorage.getItem(_USERLOGGEDKEY)){
                 currentUser = localStorage.getItem(_USERLOGGEDKEY);
             }
         })
+    
         if(currentUser){
             userLogInOut();
         }else{
@@ -491,20 +496,49 @@ const checkLoggedAccount = () => {
     }
 }
 
-const accountLogged = (isLogged = true) => {
-    localStorage.setItem(_ISLOGGEDKEY, isLogged);
+const accountLogged = isLogged => {
     isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser) : localStorage.removeItem(_USERLOGGEDKEY);
 }
 
+const pfpUpload = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = e => {
+        if(e.target.result){
+            let fileStr = e.target.result.split(",");
+            if(fileStr[0].includes("data:image/")){
+                if(!fileStr[0].includes("gif")){
+                    pfpChange(e.target.result);
+                    pfpEditCheck(true);
+                    currentFile=e.target.result;
+                }else{
+                    alert("Gif file prohibited");
+                }
+            }else{
+                alert("not an image");
+            }
+        }
+    }
+
+    reader.onerror = e => {
+        alert(e.target.error);
+    }
+
+    reader.readAsDataURL(file);
+}
+
 const pfpRemove = e => {
-    let ans = confirm("are you sure?");
+    let ans = e ?  ans = confirm("are you sure?") : true;
+
     if(ans){
-        document.querySelector(".userSettings p .pfpContainer img").src="pfpAlt.PNG";
+        pfpChange(_DEFAULTPFP);
         pfpEditCheck(false);
+        currentFile="default";
     }
 }
 
-const pfpEditCheck = (userPfpEditable = false) => {
+const pfpEditCheck = userPfpEditable => {
     const pfpCon = document.querySelector(".userSettings p .pfpContainer");
     if(userPfpEditable){
         if(!pfpCon.classList.contains("pfpClickable")){
@@ -514,6 +548,33 @@ const pfpEditCheck = (userPfpEditable = false) => {
     }else{
         pfpCon.classList.remove("pfpClickable");
         pfpCon.removeEventListener("click",pfpRemove);
+    }
+}
+
+const saveProfile = () => {
+    user_DATABASE.forEach(user=>{
+        if(user.username === currentUser){
+            user.pfp = currentFile;
+            if(pfpNickName){
+                user.nickname = document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = pfpNickName;
+                document.querySelector("#nicknameInput").value="";
+                pfpNickChange(user.nickname);
+            }
+        }
+    })
+}
+
+const pfpChange = newPfP => {
+    document.querySelector(".pfpContainer .pfp").src=newPfP;
+}
+
+const pfpNickChange = (nick="none") => {
+    const userNickNode = document.querySelector(".usernameNickname");
+
+    if(nick){
+        userNickNode.textContent=`${currentUser}/${nick}`;
+    }else{
+        userNickNode.textContent="Username/Nickname";
     }
 }
 
@@ -535,9 +596,11 @@ window.onload = () =>{
     const bodyBox = document.querySelector(".noteMenu textarea");
     const chckBox = document.querySelector(".noteMenu .extraInput p input");
     //userSettings
+    const nicknameInput = document.querySelector("#nicknameInput");
     const userSettings = document.querySelector(".userSettingsBtn");
     const userpfpInput = document.querySelector("#userpfpInput");
-    
+    const saveProfileBtn = document.querySelector(".saveProfileBtn");
+
     activePanel();
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,true);   
@@ -554,6 +617,8 @@ window.onload = () =>{
             userPass = e.target.value;
         }else if(e.target.id === "emailInput"){
             userEmail = e.target.value;
+        }else if(e.target.id === "nicknameInput"){
+            pfpNickName = e.target.value;
         }
     }
     
@@ -568,8 +633,8 @@ window.onload = () =>{
         e.target.parentNode.classList.toggle("focusTT");
     }
 
-    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn].forEach(item=>item.addEventListener("click",clicked));
-    [usernameInput, emailInput, passwordInput, titleBox, bodyBox].forEach(item=>item.addEventListener("input",insertInput));
+    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
+    [usernameInput, emailInput, passwordInput, titleBox, bodyBox, nicknameInput].forEach(item=>item.addEventListener("input",insertInput));
 
     //loginregister
     usernameInput.addEventListener("focus",focusedTT);
@@ -579,7 +644,7 @@ window.onload = () =>{
     //note
     chckBox.addEventListener("change", checkingBox);
     //userSettings
-    userpfpInput.addEventListener("change", changePfP);
+    userpfpInput.addEventListener("change", pfpUpload);
 
     checkLoggedAccount();
     nodeLoad();
