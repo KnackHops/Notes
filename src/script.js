@@ -66,11 +66,8 @@ const userLogInOut = (loggingIn = true) => {
     btn2.classList.toggle("userPanelBtn");
 
     if(loggingIn){
-        user_DATABASE.forEach(user=>{
-            if(user.username===currentUser){
-                user.nickname ? btn2.textContent = user.nickname : btn2.textContent = currentUser;
-            }
-        })
+        let nickName = searchUserDBASE('username',currentUser,'nickname');
+        nickName['nickname'] ? btn2.textContent = nickName['nickname'] : btn2.textContent = currentUser;
     }else{
         checkingOpenedFrames();
         btn2.textContent = "Register";
@@ -92,14 +89,12 @@ const registerUserValidate = () =>{
                 returnVar=false;
                 alert("Username needs to be 6 characters or longer")
             }else{
-                user_DATABASE.forEach(user=>{
-                    if(user.username===userName){
-                        returnVar=false;
-                    }
-                    if(user.userEmail===userEmail){
-                        returnVar=false;
-                    }
-                })
+                if(searchUserDBASE('username',userName)){
+                    returnVar=false;
+                }
+                if(searchUserDBASE('email',userEmail)){
+                    returnVar=false;
+                }
                 if(returnVar===false){
                     alert("User already exist!");
                 }
@@ -269,7 +264,8 @@ const clicked = e => {
     || btnClass==="loginregisterFuncBtn" 
     || btnClass==="userPanelBtn" 
     || btnClass==="logOutBtn"
-    || btnClass==="saveProfileBtn"){
+    || btnClass==="saveProfileBtn"
+    || btnClass==="clearNickname"){
         nodeClass=btnClass;
     }else{
         if(parent.classList.contains("defaultNote")){
@@ -318,6 +314,8 @@ const clicked = e => {
         activePanel();
     }else if(nodeClass==="saveProfileBtn"){
         saveProfile();
+    }else if(nodeClass==="clearNickname"){
+        pfpNickClear();
     }else{
         menuClicked(nodeClass,e.target.className);
     }
@@ -379,22 +377,17 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             document.querySelector(nodeClass).classList.toggle("userEdit");
         }
     }else if (nodeClass===".userSettings"){
-        user_DATABASE.forEach(user=>{
-            if(user.username === currentUser){
-                user.nickname? pfpNickChange(user.nickname) : pfpNickChange();
-                if(user.pfp === "default"){
-                    pfpChange(_DEFAULTPFP);
-                    pfpEditCheck(false);
-                }else{
-                    user_DATABASE.forEach(user=>{
-                        if(user.username === currentUser){
-                            pfpChange(user.pfp);
-                        }
-                    })
-                    pfpEditCheck(true);
-                }
-            }
-        })
+        const userObj = searchUserDBASE('username',currentUser,'nickname','pfp');
+
+        userObj['nickname'] ? pfpLabelChange(userObj['nickname']) : pfpLabelChange();
+
+        if(userObj['pfp'] === "default"){
+            pfpChange(_DEFAULTPFP);
+            pfpEditCheck(false);
+        }else{
+            pfpChange(userObj['pfp']);
+            pfpEditCheck(true);
+        }
     }
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
@@ -417,8 +410,6 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             document.querySelector(".noteMenu").classList.toggle("userEdit");
         }
         activeNote(false,false);
-    }else if(nodeClass === ".userSettings"){
-        pfpChange("");
     }
 
     clearInputs(nodeClass);
@@ -436,7 +427,7 @@ const clearInputs = whichNode => {
         document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
     }else if(whichNode===".userSettings"){
         pfpRemove(null);
-        pfpNickChange(null);
+        pfpLabelChange(null);
     }else{
         document.querySelector(`${whichNode} input`).value="";
         document.querySelector(`${whichNode} textarea`).value="";
@@ -481,11 +472,7 @@ const activePanel = () => {
 
 const checkLoggedAccount = () => {
     if(localStorage.getItem(_USERLOGGEDKEY)){
-        user_DATABASE.forEach(user =>{
-            if(user.username===localStorage.getItem(_USERLOGGEDKEY)){
-                currentUser = localStorage.getItem(_USERLOGGEDKEY);
-            }
-        })
+        searchUserDBASE('username', localStorage.getItem(_USERLOGGEDKEY)) ? currentUser = localStorage.getItem(_USERLOGGEDKEY) : localStorage.removeItem(_USERLOGGEDKEY);
     
         if(currentUser){
             userLogInOut();
@@ -498,6 +485,19 @@ const checkLoggedAccount = () => {
 
 const accountLogged = isLogged => {
     isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser) : localStorage.removeItem(_USERLOGGEDKEY);
+}
+
+
+const saveProfile = () => {
+    if(currentFile){
+        updateUserDBASE(currentUser,'pfp',currentFile);
+    }
+    if(pfpNickName){
+        updateUserDBASE(currentUser,'nickname',pfpNickName);
+        document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = pfpNickName;
+        document.querySelector("#nicknameInput").value="";
+        pfpLabelChange(pfpNickName);
+    }
 }
 
 const pfpUpload = e => {
@@ -551,31 +551,62 @@ const pfpEditCheck = userPfpEditable => {
     }
 }
 
-const saveProfile = () => {
-    user_DATABASE.forEach(user=>{
-        if(user.username === currentUser){
-            user.pfp = currentFile;
-            if(pfpNickName){
-                user.nickname = document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = pfpNickName;
-                document.querySelector("#nicknameInput").value="";
-                pfpNickChange(user.nickname);
-            }
-        }
-    })
-}
-
 const pfpChange = newPfP => {
     document.querySelector(".pfpContainer .pfp").src=newPfP;
 }
 
-const pfpNickChange = (nick="none") => {
-    const userNickNode = document.querySelector(".usernameNickname");
+const pfpNickClear = () => {
+    updateUserDBASE(currentUser, 'nickname', null);
+    pfpNickName=null;
+    document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = currentUser;
+    document.querySelector("#nicknameInput").value="";
+    pfpLabelChange();
+}
 
+const pfpLabelChange = (nick="none") => {
+    const userNickNode = document.querySelector(".usernameNickname");
+    
     if(nick){
-        userNickNode.textContent=`${currentUser}/${nick}`;
+        let textC = `${currentUser}`;
+        
+        if(nick!=="none"){
+            textC+=`[${nick}]`   
+        }
+
+        userNickNode.textContent=textC;
     }else{
         userNickNode.textContent="Username/Nickname";
     }
+}
+
+const searchUserDBASE = (propName, propValue, opPropName=null, sndOpPropName=null) => {
+    let returnVar=false;
+
+    user_DATABASE.forEach(user=>{
+        if(propValue===user[propName]){
+            returnVar={[propName]:user[propName]};
+            if(opPropName){
+                returnVar[opPropName]=user[opPropName];
+            }
+            if(sndOpPropName){
+                returnVar[sndOpPropName]=user[sndOpPropName];
+            }
+        }
+    });
+
+    return returnVar;
+}
+
+const updateUserDBASE = (username, propName, propValue) => {
+    let returnVar = false;
+    user_DATABASE.forEach(user=>{
+        if(username===user.username){
+            returnVar = true;
+            user[propName] = propValue;
+        }
+    })
+
+    return false;
 }
 
 window.onload = () =>{
@@ -600,6 +631,7 @@ window.onload = () =>{
     const userSettings = document.querySelector(".userSettingsBtn");
     const userpfpInput = document.querySelector("#userpfpInput");
     const saveProfileBtn = document.querySelector(".saveProfileBtn");
+    const clearNickname = document.querySelector(".clearNickname");
 
     activePanel();
     sections.forEach(section=>{
@@ -633,7 +665,7 @@ window.onload = () =>{
         e.target.parentNode.classList.toggle("focusTT");
     }
 
-    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
+    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, saveProfileBtn, clearNickname].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, bodyBox, nicknameInput].forEach(item=>item.addEventListener("input",insertInput));
 
     //loginregister
