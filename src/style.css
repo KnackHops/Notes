@@ -65,6 +65,7 @@ nav .userPanel {
     background-color: rgba(0,0,0,.5);
     padding: .5rem 0;
     width: 8.5rem;
+    top: 4rem;
     right: -20rem;
     opacity: 0;
 }
@@ -154,6 +155,21 @@ body .mainArticle {
     width: 90%;
     border-radius: 50%;
     font-size: 20px;
+}
+
+.loginRegisterMenuBtn.disabled {
+    position: fixed;
+}
+
+.nonProfilePfp {
+    height: 5rem;
+    width: 5rem;
+}
+
+.loggedInUL {
+    display: flex;
+    flex-flow: column-reverse;
+    align-items: center;
 }
 
 /* main Article */

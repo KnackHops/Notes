@@ -20,7 +20,7 @@ let login_DATABASE=[{
 
 let titleInput, bodyInput;
 let userName, userPass, userEmail;
-let pfpNickName;
+let nickName;
 let editable = false;
 let clickingCheck = false;
 let currentOpenID = null;
@@ -57,18 +57,42 @@ const userLogInOut = (loggingIn = true) => {
     const btn1 = document.querySelector(".loginBtn");
     const btn2 = document.querySelector(".loginRegisterMenuBtn:nth-child(2) button");
     const userPanel = document.querySelector("nav .userPanel");
+    const userNavBtns = document.querySelector("nav ul:nth-child(2)");
+
 
     userPanel.classList.toggle("animAct");
 
     btn1.disabled = loggingIn;
     btn1.classList.toggle("hiddenSection");
+    btn1.parentNode.classList.toggle("disabled");
+    userNavBtns.classList.toggle("loggedInUL");
     btn2.classList.toggle("registerBtn");
     btn2.classList.toggle("userPanelBtn");
 
     if(loggingIn){
-        let nickName = searchUserDBASE('username',currentUser,'nickname');
-        nickName['nickname'] ? btn2.textContent = nickName['nickname'] : btn2.textContent = currentUser;
+        let user = searchUserDBASE('username',currentUser,'nickname','pfp');
+        const imgCon = document.createElement("li");
+        const imgIn = document.createElement("img");
+
+        imgCon.classList.add("pfpContainer");
+        imgCon.classList.add("nonProfilePfp");
+        imgIn.setAttribute("alt","profile picture");
+        imgIn.classList.add("pfp");
+
+        imgCon.appendChild(imgIn);
+        userNavBtns.appendChild(imgCon);
+
+        user['nickname'] ? btn2.textContent = user['nickname'] : btn2.textContent = currentUser;
+
+        user['pfp'] === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user['pfp']);
     }else{
+        const imgCon = document.querySelector(".pfpContainer.nonProfilePfp");
+        const imgIn = document.createElement(".pfpContainer.nonProfilePfp .pfp");
+
+        imgCon.removeChild(imgIn);
+        imgCon.parentNode.removeChild(imgCon);
+        
+        
         checkingOpenedFrames();
         btn2.textContent = "Register";
     }
@@ -315,7 +339,7 @@ const clicked = e => {
     }else if(nodeClass==="saveProfileBtn"){
         saveProfile();
     }else if(nodeClass==="clearNickname"){
-        pfpNickClear();
+        nickClear();
     }else{
         menuClicked(nodeClass,e.target.className);
     }
@@ -377,9 +401,10 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             document.querySelector(nodeClass).classList.toggle("userEdit");
         }
     }else if (nodeClass===".userSettings"){
+        activePanel();
         const userObj = searchUserDBASE('username',currentUser,'nickname','pfp');
 
-        userObj['nickname'] ? pfpLabelChange(userObj['nickname']) : pfpLabelChange();
+        userObj['nickname'] ? nickLabelChange(userObj['nickname']) : nickLabelChange();
 
         if(userObj['pfp'] === "default"){
             pfpChange(_DEFAULTPFP);
@@ -427,7 +452,7 @@ const clearInputs = whichNode => {
         document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
     }else if(whichNode===".userSettings"){
         pfpRemove(null);
-        pfpLabelChange(null);
+        nickLabelChange(null);
     }else{
         document.querySelector(`${whichNode} input`).value="";
         document.querySelector(`${whichNode} textarea`).value="";
@@ -489,14 +514,19 @@ const accountLogged = isLogged => {
 
 
 const saveProfile = () => {
+    //checks if currentFile was changed
+    //currentFile by default is null
+    //currentFile having a value other than null means it was changed
     if(currentFile){
+        currentFile === "default" ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentFile);
         updateUserDBASE(currentUser,'pfp',currentFile);
     }
-    if(pfpNickName){
-        updateUserDBASE(currentUser,'nickname',pfpNickName);
-        document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = pfpNickName;
-        document.querySelector("#nicknameInput").value="";
-        pfpLabelChange(pfpNickName);
+    currentFile=null;
+
+    if(nickName){
+        updateUserDBASE(currentUser,'nickname',nickName);
+        nickLabelChange(nickName);
+        nickBtnChange(nickName);
     }
 }
 
@@ -529,7 +559,8 @@ const pfpUpload = e => {
 }
 
 const pfpRemove = e => {
-    let ans = e ?  ans = confirm("are you sure?") : true;
+    let ans;
+    e ?  ans = confirm("are you sure?") : true;
 
     if(ans){
         pfpChange(_DEFAULTPFP);
@@ -552,18 +583,20 @@ const pfpEditCheck = userPfpEditable => {
 }
 
 const pfpChange = newPfP => {
-    document.querySelector(".pfpContainer .pfp").src=newPfP;
+    document.querySelector(".userSettings .pfpContainer .pfp").src=newPfP;
 }
 
-const pfpNickClear = () => {
+const pfpNavChange = newPfP => {
+    document.querySelector(".loggedInUL .pfpContainer .pfp").src=newPfP;
+}
+
+const nickClear = () => {
     updateUserDBASE(currentUser, 'nickname', null);
-    pfpNickName=null;
-    document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = currentUser;
-    document.querySelector("#nicknameInput").value="";
-    pfpLabelChange();
+    nickName=null;
+    nickBtnChange(currentUser);
 }
 
-const pfpLabelChange = (nick="none") => {
+const nickLabelChange = (nick="none") => {
     const userNickNode = document.querySelector(".usernameNickname");
     
     if(nick){
@@ -576,6 +609,17 @@ const pfpLabelChange = (nick="none") => {
         userNickNode.textContent=textC;
     }else{
         userNickNode.textContent="Username/Nickname";
+    }
+}
+
+const nickBtnChange = (userNickName) => {
+    
+    document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = userNickName;
+    document.querySelector("#nicknameInput").value="";
+    if(userNickName!==currentUser){
+        nickLabelChange(nicknameProp);
+    }else{
+        nickLabelChange();
     }
 }
 
@@ -606,7 +650,7 @@ const updateUserDBASE = (username, propName, propValue) => {
         }
     })
 
-    return false;
+    return returnVar;
 }
 
 window.onload = () =>{
@@ -650,7 +694,7 @@ window.onload = () =>{
         }else if(e.target.id === "emailInput"){
             userEmail = e.target.value;
         }else if(e.target.id === "nicknameInput"){
-            pfpNickName = e.target.value;
+            nickName = e.target.value;
         }
     }
     
@@ -667,6 +711,14 @@ window.onload = () =>{
 
     [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, saveProfileBtn, clearNickname].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, bodyBox, nicknameInput].forEach(item=>item.addEventListener("input",insertInput));
+
+    window.addEventListener("keydown", e => {
+        if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
+            if(e.key==="Enter"){
+                loginregisterFuncBtn.click();
+            }
+        }
+    });
 
     //loginregister
     usernameInput.addEventListener("focus",focusedTT);
