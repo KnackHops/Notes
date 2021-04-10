@@ -2,13 +2,18 @@ const _ISLOGGEDKEY = "notesIsLogged";
 const _USERLOGGEDKEY = "notesUserLogged";
 const _DEFAULTPFP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAABeCAYAAAA336rmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADlSURBVHhe7dExAQAwDMCgCWj9y+1scORAAW9mL4YyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpg7H3AU/beRBUx2yaAAAAAElFTkSuQmCC";
 
-let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
-{title: "test1", body: "testingminefam1", editable: false, id:1},
-{title: "test2", body: "testingminefam2", editable: false, id:2}];
+let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 2, day: 25, year: 2021}},
+{title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}},
+{title: "test2", body: "testingminefam2", editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}}];
 
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
+    pfp: "default",
+    nickname: null
+},{
+    username: "barrys",
+    email: "barry@gmail.com",
     pfp: "default",
     nickname: null
 }];
@@ -16,6 +21,9 @@ let user_DATABASE=[{
 let login_DATABASE=[{
     username: "affafu",
     password: "affafuPass",
+},{
+    username: "barrys",
+    password: "barryPass",
 }]
 
 let titleInput, bodyInput;
@@ -87,7 +95,7 @@ const userLogInOut = (loggingIn = true) => {
         user['pfp'] === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user['pfp']);
     }else{
         const imgCon = document.querySelector(".pfpContainer.nonProfilePfp");
-        const imgIn = document.createElement(".pfpContainer.nonProfilePfp .pfp");
+        const imgIn = document.querySelector(".pfpContainer.nonProfilePfp .pfp");
 
         imgCon.removeChild(imgIn);
         imgCon.parentNode.removeChild(imgCon);
@@ -95,7 +103,10 @@ const userLogInOut = (loggingIn = true) => {
         
         checkingOpenedFrames();
         btn2.textContent = "Register";
+        currentUser=null;
     }
+    clearNotes();
+    nodeLoad();
 }
 
 const registerUserValidate = () =>{
@@ -194,37 +205,66 @@ const userTerminal = () => {
 }
 
 const saveNote = () => {
-    if(_DATABASE.length){
-        id = _DATABASE[_DATABASE.length-1].id + 1;
-    }else{
-        id = 1;
+    let id = null;
+    let d = new Date();
+    let newDate = {};
+    newDate.month = d.getMonth();
+    newDate.day = d.getDate();
+    newDate.year =  d.getFullYear();
+
+    if(currentUser){
+        _DATABASE.forEach(item=>{
+            if(item.user===currentUser){
+                id=item.id;
+            }
+        })
     }
-    _DATABASE.push({title: titleInput, body: bodyInput, editable, id});
+
+    if(id){
+        id+=1;
+    }else{
+        id=0;
+    }
+
+    if(currentUser){
+        _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user: currentUser, date: newDate});
+    }
     terminal();
 }
 
 const editNote = () => {
-    _DATABASE.forEach(note=>{
-        if(Number(currentOpenID.replace("note",""))===note.id){
-            if(titleInput!==note.title){
-                note.title=titleInput;
+    if(currentUser){
+        _DATABASE.forEach(item=>{
+            if(item.user===currentUser){
+                if(Number(currentOpenID.replace("note",""))===item.id){
+                    if(titleInput!==item.title){
+                        item.title=titleInput;
+                    }
+                    if(bodyInput!==note.body){
+                        item.body=bodyInput;
+                    }
+                }
             }
-            if(bodyInput!==note.body){
-                note.body=bodyInput;
-            }
-        }
     })
+}
     terminal(true);
 }
 
 const deleteNote = id => {
     closeBtnClicked(".noteMenu",true);
-    _DATABASE = _DATABASE.filter(note=>note.id!==Number(id));
+    if(currentUser){
+        _DATABASE = _DATABASE.filter(item=>{
+            if(currentUser===item.user){
+                note.id!==Number(id)
+            }
+        });
+    }
+
     clearNotes();
     nodeLoad();
 }
 
-const createNote = (title=null, body=null, id=null) => {
+const createNote = (title=null, body=null, id=null, userN=null) => {
     const ul = document.querySelector(".mainArticle ul")
     const li = document.createElement("li");
     const h3 = document.createElement("h3");
@@ -247,6 +287,7 @@ const createNote = (title=null, body=null, id=null) => {
         li.addEventListener("dblclick", clicked);
     }else{
         const pBody = document.createElement("p");
+        li.setAttribute("data-username", userN);
         li.setAttribute("id","note"+id);
         pBody.textContent = body;
         li.appendChild(pBody);
@@ -267,10 +308,14 @@ const clearNotes = () => {
 }
 
 const nodeLoad = () => {
-    if(_DATABASE){
-        _DATABASE.forEach(item=>{
-            createNote(item.title,item.body,item.id);
-        })
+    if(currentUser){
+        if(_DATABASE){
+            _DATABASE.forEach(item=>{
+                if(currentUser===item.user){
+                    createNote(item.title, item.body, item.id, item.user);
+                }
+            })
+        }
     }
     createNote();
 }
@@ -496,16 +541,19 @@ const activePanel = () => {
 }
 
 const checkLoggedAccount = () => {
+    let returnVar = false;
     if(localStorage.getItem(_USERLOGGEDKEY)){
         searchUserDBASE('username', localStorage.getItem(_USERLOGGEDKEY)) ? currentUser = localStorage.getItem(_USERLOGGEDKEY) : localStorage.removeItem(_USERLOGGEDKEY);
     
         if(currentUser){
+            returnVar = true;
             userLogInOut();
         }else{
-            currentUser=null;
             localStorage.removeItem(_USERLOGGEDKEY);
         }
     }
+    
+    return returnVar;
 }
 
 const accountLogged = isLogged => {
@@ -730,6 +778,7 @@ window.onload = () =>{
     //userSettings
     userpfpInput.addEventListener("change", pfpUpload);
 
-    checkLoggedAccount();
-    nodeLoad();
+    if(!checkLoggedAccount()){
+        nodeLoad();
+    }
 }
