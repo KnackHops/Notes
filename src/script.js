@@ -2,13 +2,20 @@ const _ISLOGGEDKEY = "notesIsLogged";
 const _USERLOGGEDKEY = "notesUserLogged";
 const _DEFAULTPFP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAABeCAYAAAA336rmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADlSURBVHhe7dExAQAwDMCgCWj9y+1scORAAW9mL4YyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpg7H3AU/beRBUx2yaAAAAAElFTkSuQmCC";
 
-let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0},
-{title: "test1", body: "testingminefam1", editable: false, id:1},
-{title: "test2", body: "testingminefam2", editable: false, id:2}];
+let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 2, day: 25, year: 2021}, lastUpdated: null},
+{title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: null},
+{title: "test2", body: "testingminefam2", editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
+
+let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2021}, lastUpdated: null}]
 
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
+    pfp: "default",
+    nickname: null
+},{
+    username: "barrys",
+    email: "barry@gmail.com",
     pfp: "default",
     nickname: null
 }];
@@ -16,6 +23,9 @@ let user_DATABASE=[{
 let login_DATABASE=[{
     username: "affafu",
     password: "affafuPass",
+},{
+    username: "barrys",
+    password: "barryPass",
 }]
 
 let titleInput, bodyInput;
@@ -31,6 +41,16 @@ const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
     clearNotes();
     nodeLoad();
+}
+
+const dateNowGet = () => {
+    const d = new Date();
+    let newDate = {};
+    newDate.month = d.getMonth();
+    newDate.day = d.getDate();
+    newDate.year =  d.getFullYear();
+
+    return newDate;
 }
 
 const logInUserValidate = () => {
@@ -87,7 +107,7 @@ const userLogInOut = (loggingIn = true) => {
         user['pfp'] === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user['pfp']);
     }else{
         const imgCon = document.querySelector(".pfpContainer.nonProfilePfp");
-        const imgIn = document.createElement(".pfpContainer.nonProfilePfp .pfp");
+        const imgIn = document.querySelector(".pfpContainer.nonProfilePfp .pfp");
 
         imgCon.removeChild(imgIn);
         imgCon.parentNode.removeChild(imgCon);
@@ -95,7 +115,10 @@ const userLogInOut = (loggingIn = true) => {
         
         checkingOpenedFrames();
         btn2.textContent = "Register";
+        currentUser=null;
     }
+    clearNotes();
+    nodeLoad();
 }
 
 const registerUserValidate = () =>{
@@ -109,18 +132,22 @@ const registerUserValidate = () =>{
             returnVar=false;
             alert("Password needs to be 6 characters or longer and have one uppercase letter");
         }else{
-            if(userName.length<=5){
-                returnVar=false;
-                alert("Username needs to be 6 characters or longer")
+            if(userName ==="localUser"){
+                alert("Please pick a valid username");
             }else{
-                if(searchUserDBASE('username',userName)){
+                if(userName.length<=5){
                     returnVar=false;
-                }
-                if(searchUserDBASE('email',userEmail)){
-                    returnVar=false;
-                }
-                if(returnVar===false){
-                    alert("User already exist!");
+                    alert("Username needs to be 6 characters or longer")
+                }else{
+                    if(searchUserDBASE('username',userName)){
+                        returnVar=false;
+                    }
+                    if(searchUserDBASE('email',userEmail)){
+                        returnVar=false;
+                    }
+                    if(returnVar===false){
+                        alert("User already exist!");
+                    }
                 }
             }
         }
@@ -194,37 +221,101 @@ const userTerminal = () => {
 }
 
 const saveNote = () => {
-    if(_DATABASE.length){
-        id = _DATABASE[_DATABASE.length-1].id + 1;
-    }else{
-        id = 1;
+    let id = null;
+    let newDate = dateNowGet();
+
+    if(currentUser){
+        _DATABASE.forEach(item=>{
+            if(item.user===currentUser){
+                id=item.id;
+            }
+        })
     }
-    _DATABASE.push({title: titleInput, body: bodyInput, editable, id});
+
+    if(id){
+        id+=1;
+    }else{
+        id=0;
+    }
+
+    if(currentUser){
+        _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user: currentUser, date: newDate});
+    }
     terminal();
 }
 
 const editNote = () => {
-    _DATABASE.forEach(note=>{
-        if(Number(currentOpenID.replace("note",""))===note.id){
-            if(titleInput!==note.title){
-                note.title=titleInput;
+    // editing note
+    let id = currentOpenID;
+    
+    if(id.indexOf("note")===0){
+        id = Number(currentOpenID.replace("note",""));
+        _DATABASE.forEach(item=>{
+            if(item.user===currentUser){
+                if(id===item.id){
+                    [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body);
+                }
             }
-            if(bodyInput!==note.body){
-                note.body=bodyInput;
+        })
+    }else{
+        id = Number(currentOpenID.replace("localNote",""));
+        local_DATABASE.forEach(item=>{
+            if(id===item.id){
+                [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body);
             }
-        }
-    })
+        })
+    }
+
     terminal(true);
 }
 
-const deleteNote = id => {
+const editAndCheck = (title, body) => {
+    let edited=false;
+    let lastUpdated=null;
+
+    if(title!==titleInput){
+        title=titleInput;
+        edited=true;
+    }
+
+    if(body!==bodyInput){
+        body=bodyInput;
+        edited=true;
+    }
+
+    if(edited){
+        lastUpdated = dateNowGet();
+    }
+
+    return [title,body,lastUpdated];
+}
+
+const deleteNote = () => {
+    let id = currentOpenID;
+
     closeBtnClicked(".noteMenu",true);
-    _DATABASE = _DATABASE.filter(note=>note.id!==Number(id));
+    
+    if(id.indexOf("note")==0){
+        id = id.replace("note","");
+        _DATABASE = _DATABASE.filter(item=>{
+            if(currentUser===item.user){
+                if(item.id!==Number(id)){
+                    return item;
+                }
+            }else {
+                return item;
+            }
+        });
+    }else{
+        id = id.replace("localNote","");
+        local_DATABASE = local_DATABASE.filter(item=>item.id!==Number(id));
+    }
+
     clearNotes();
     nodeLoad();
 }
 
-const createNote = (title=null, body=null, id=null) => {
+const createNote = (title=null, body=null, id=null, userN=null) => {
     const ul = document.querySelector(".mainArticle ul")
     const li = document.createElement("li");
     const h3 = document.createElement("h3");
@@ -247,7 +338,13 @@ const createNote = (title=null, body=null, id=null) => {
         li.addEventListener("dblclick", clicked);
     }else{
         const pBody = document.createElement("p");
-        li.setAttribute("id","note"+id);
+        if(userN!=="localUser"){
+            li.setAttribute("data-username", userN);
+            li.setAttribute("id","note"+id);
+        }else{
+            li.setAttribute("data-username", userN);
+            li.setAttribute("id","localNote"+id);
+        }
         pBody.textContent = body;
         li.appendChild(pBody);
         li.classList.add("userNote");
@@ -267,11 +364,24 @@ const clearNotes = () => {
 }
 
 const nodeLoad = () => {
+    let lastID;
+
     if(_DATABASE){
         _DATABASE.forEach(item=>{
-            createNote(item.title,item.body,item.id);
+            if(currentUser===item.user){
+                createNote(item.title, item.body, item.id, item.user);
+                lastID=item.id
+            }
         })
     }
+
+    if(local_DATABASE){
+        local_DATABASE.forEach(item=>{
+            createNote(item.title, item.body, item.id, item.user);
+            lastID++;
+        })
+    }
+
     createNote();
 }
 
@@ -324,7 +434,7 @@ const clicked = e => {
         }
     }else if(nodeClass==="delBtn"){
         if(confirm("Are you sure?")){
-            deleteNote(currentOpenID.replace("note",""))
+            deleteNote();
         }
     }else if(nodeClass==="loginregisterFuncBtn"){
         //log in button
@@ -374,28 +484,53 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
         })
     }else if (nodeClass===".noteMenu"){
         const delBtn = document.querySelector(".delBtn");
+
         if(!noteID){
             delBtn.classList.add("hiddenSection");
             delBtn.disabled = true;
             activeNote(false, true);
         }else{
+            let id = noteID;
+            let title, body;
+
             const addBtn = document.querySelector(".addBtn");
             addBtn.classList.toggle("addBtn");
             addBtn.classList.toggle("editBtn");
             addBtn.textContent = "Edit";
-            _DATABASE.forEach(note=>{
-                if(Number(noteID.replace("note","")) === note.id){
-                    document.querySelector(`${nodeClass} input`).value = titleInput = note.title;
-                    document.querySelector(`${nodeClass} textarea`).value = bodyInput = note.body;
-                    if(!note.editable){
-                        document.querySelector(`${nodeClass} .extraInput p input`).checked = false;
-                        activeNote();
-                    }else{
-                        document.querySelector(`${nodeClass} .extraInput p input`).checked = true;
-                        activeNote(false, true);
+
+            if(id.indexOf("note")===0){
+                id = Number(noteID.replace("note",""));
+                _DATABASE.forEach(item=>{
+                    if(currentUser===item.user){
+                        if(id === item.id){
+                            title = titleInput = item.title;
+                            body = bodyInput = item.body;
+                            editable = item.editable;
+                        }
                     }
-                }
-            })
+                })
+            }else{
+                id = Number(noteID.replace("localNote",""));
+                local_DATABASE.forEach(item=>{
+                    if(item.id===id){
+                        title = titleInput = item.title;
+                        body = bodyInput = item.body;
+                        editable = item.editable;
+                    }
+                })
+            }
+
+            document.querySelector(`${nodeClass} input`).value = title;
+            document.querySelector(`${nodeClass} textarea`).value = body;
+
+            if(!editable){
+                document.querySelector(`${nodeClass} .extraInput p input`).checked = false;
+                activeNote();
+            }else{
+                document.querySelector(`${nodeClass} .extraInput p input`).checked = true;
+                activeNote(false, true);
+            }
+
             document.querySelector(".delBtn").disabled=false;
             delBtn.classList.remove("hiddenSection");
             document.querySelector(nodeClass).classList.toggle("userEdit");
@@ -472,11 +607,28 @@ const activeNote = (fromEdit=false, isActive = false) => {
     document.querySelector(".noteMenu").classList.toggle("nonEditable");
 
     if(fromEdit){
-        _DATABASE.forEach(note => {
-        if(Number(currentOpenID.replace("note",""))===note.id){
-                note.editable = !note.editable;
+        let id = currentOpenID;
+
+        if(id.indexOf("note")===0){
+            id = Number(currentOpenID.replace("note",""));
+            _DATABASE.forEach(item => {
+                if(item.user===currentUser){
+                    if(id===item.id){
+                        
+                        console.log("ei", id, item.editable);
+                        item.editable = !item.editable;
+                    }
+                }
+            })
+        }else{
+            id = Number(currentOpenID.replace("localNote",""));
+            local_DATABASE.forEach(item=>{
+                if(id===item.id){
+                    item.editable = !item.editable;
+                }
+            })
         }
-        })
+        
     }
 }
 
@@ -496,16 +648,19 @@ const activePanel = () => {
 }
 
 const checkLoggedAccount = () => {
+    let returnVar = false;
     if(localStorage.getItem(_USERLOGGEDKEY)){
         searchUserDBASE('username', localStorage.getItem(_USERLOGGEDKEY)) ? currentUser = localStorage.getItem(_USERLOGGEDKEY) : localStorage.removeItem(_USERLOGGEDKEY);
     
         if(currentUser){
+            returnVar = true;
             userLogInOut();
         }else{
-            currentUser=null;
             localStorage.removeItem(_USERLOGGEDKEY);
         }
     }
+    
+    return returnVar;
 }
 
 const accountLogged = isLogged => {
@@ -730,6 +885,7 @@ window.onload = () =>{
     //userSettings
     userpfpInput.addEventListener("change", pfpUpload);
 
-    checkLoggedAccount();
-    nodeLoad();
+    if(!checkLoggedAccount()){
+        nodeLoad();
+    }
 }
