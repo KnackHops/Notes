@@ -32,12 +32,14 @@ let titleInput, bodyInput;
 let userName, userPass, userEmail;
 let nickName;
 let editable = false;
+let saveLocalChk = false;
 let clickingCheck = false;
 let currentOpenID = null;
 let currentUser = null;
 let currentFile = null;
 
 const terminal = (userEdit=false) => {
+    console.log("ey");
     closeBtnClicked(".noteMenu",userEdit);
     clearNotes();
     nodeLoad();
@@ -223,24 +225,40 @@ const userTerminal = () => {
 const saveNote = () => {
     let id = null;
     let newDate = dateNowGet();
+    let user;
 
-    if(currentUser){
+    if(currentUser && !saveLocalChk){
+        user = currentUser;
+
         _DATABASE.forEach(item=>{
             if(item.user===currentUser){
                 id=item.id;
             }
         })
+    }else{
+        user = "localUser";
+
+        local_DATABASE.forEach(item=>{
+            if(item){
+                id=item.id;
+            }
+        })
     }
 
-    if(id){
+    if(id || id===0){
         id+=1;
     }else{
         id=0;
     }
 
-    if(currentUser){
-        _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user: currentUser, date: newDate});
+    let newUser = {title: titleInput, body: bodyInput, editable, id, user, date: newDate};
+
+    if(currentUser && !saveLocalChk){
+        _DATABASE.push(newUser);
+    }else{
+        local_DATABASE.push(newUser);
     }
+
     terminal();
 }
 
@@ -484,11 +502,16 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
         })
     }else if (nodeClass===".noteMenu"){
         const delBtn = document.querySelector(".delBtn");
+        const locallySaveCheck = document.querySelector(".extraInput .saveLocallyContainer");
 
         if(!noteID){
             delBtn.classList.add("hiddenSection");
             delBtn.disabled = true;
             activeNote(false, true);
+            if(currentUser){
+                locallySaveCheck.classList.remove("hiddenSection");
+                locallySaveCheck.childNodes[3].disabled = false;
+            }
         }else{
             let id = noteID;
             let title, body;
@@ -524,10 +547,10 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             document.querySelector(`${nodeClass} textarea`).value = body;
 
             if(!editable){
-                document.querySelector(`${nodeClass} .extraInput p input`).checked = false;
+                document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
                 activeNote();
             }else{
-                document.querySelector(`${nodeClass} .extraInput p input`).checked = true;
+                document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = true;
                 activeNote(false, true);
             }
 
@@ -554,6 +577,9 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
 }
 
 const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
+
+    const locallySaveCheck = document.querySelector(".extraInput .saveLocallyContainer");
+
     if(nodeClass === ".loginRegisterMenu"){
         if(document.querySelector(nodeClass).classList.contains("registerRN") || initialize){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
@@ -568,6 +594,11 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             addBtn.classList.toggle("addBtn");
             addBtn.textContent = "Add Note";
             document.querySelector(".noteMenu").classList.toggle("userEdit");
+        }else{
+            locallySaveCheck.classList.add("hiddenSection");
+            locallySaveCheck.childNodes[3].checked = false;
+            saveLocalChk = false;
+            locallySaveCheck.childNodes[3].disabled = true;
         }
         activeNote(false,false);
     }
@@ -591,7 +622,7 @@ const clearInputs = whichNode => {
     }else{
         document.querySelector(`${whichNode} input`).value="";
         document.querySelector(`${whichNode} textarea`).value="";
-        document.querySelector(`${whichNode} .extraInput p input`).checked = false;
+        document.querySelector(`${whichNode} .extraInput .checkEditContainer input`).checked = false;
         titleInput = "";
         bodyInput = "";
         editable = false;
@@ -614,8 +645,6 @@ const activeNote = (fromEdit=false, isActive = false) => {
             _DATABASE.forEach(item => {
                 if(item.user===currentUser){
                     if(id===item.id){
-                        
-                        console.log("ei", id, item.editable);
                         item.editable = !item.editable;
                     }
                 }
@@ -824,7 +853,8 @@ window.onload = () =>{
     const delBtn = document.querySelector(".delBtn");
     const titleBox = document.querySelector(".noteMenu input");
     const bodyBox = document.querySelector(".noteMenu textarea");
-    const chckBox = document.querySelector(".noteMenu .extraInput p input");
+    const chckBox = document.querySelector(".noteMenu .extraInput .checkEditContainer input");
+    const saveLocallyCheck = document.querySelector(".noteMenu .extraInput .saveLocallyContainer input");
     //userSettings
     const nicknameInput = document.querySelector("#nicknameInput");
     const userSettings = document.querySelector(".userSettingsBtn");
@@ -854,10 +884,14 @@ window.onload = () =>{
     }
     
     const checkingBox = e => {
-        e.target.checked ? editable = true : editable = false;
+        editable = e.target.checked;
         if(e.target.parentNode.parentNode.parentNode.classList.contains("userEdit")){
             activeNote(true,editable);
         }
+    }
+
+    const chkLocallySave = e => {
+        saveLocalChk = e.target.checked;
     }
 
     const focusedTT = e => {
@@ -882,6 +916,7 @@ window.onload = () =>{
     passwordInput.addEventListener("blur",focusedTT);
     //note
     chckBox.addEventListener("change", checkingBox);
+    saveLocallyCheck.addEventListener("change", chkLocallySave);
     //userSettings
     userpfpInput.addEventListener("change", pfpUpload);
 

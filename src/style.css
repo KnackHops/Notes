@@ -255,6 +255,7 @@ section .closeBtn {
 }
 
 .noteMenu .closeBtn {
+    top: 0;
     right: 1rem;
 }
 
