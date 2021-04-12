@@ -2,11 +2,11 @@ const _ISLOGGEDKEY = "notesIsLogged";
 const _USERLOGGEDKEY = "notesUserLogged";
 const _DEFAULTPFP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAABeCAYAAAA336rmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADlSURBVHhe7dExAQAwDMCgCWj9y+1scORAAW9mL4YyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpg7H3AU/beRBUx2yaAAAAAElFTkSuQmCC";
 
-let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 2, day: 25, year: 2021}, lastUpdated: null},
-{title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: null},
+let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
+{title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
 {title: "test2", body: "testingminefam2", editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
-let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2021}, lastUpdated: null}]
+let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
 
 let user_DATABASE=[{
     username: "affafu",
@@ -39,10 +39,85 @@ let currentUser = null;
 let currentFile = null;
 
 const terminal = (userEdit=false) => {
-    console.log("ey");
     closeBtnClicked(".noteMenu",userEdit);
     clearNotes();
     nodeLoad();
+}
+
+const orderList = () => {
+    let newDbase = _DATABASE;
+
+    local_DATABASE.forEach(item=>{
+        if(item){
+            newDbase.push(item);
+        }
+    })
+
+    // console.log(descendCreated(newDbase));
+    
+    // console.log(ascendCreated(newDbase));
+
+    // console.log(ascendEdited(newDbase));
+
+    // console.log(descendEdited(newDbase));
+}
+
+const ascendCreated = arrayDbase => {
+    return arrayDbase.sort(
+        function(a,b){
+            return totalDate(a.date.day, a.date.month, a.date.year) - totalDate(b.date.day, b.date.month, b.date.year);
+        }
+    );
+}
+
+const descendCreated = arrayDbase => {
+    return arrayDbase.sort(
+        function(a,b){
+            return totalDate(b.date.day, b.date.month, b.date.year) - totalDate(a.date.day, a.date.month, a.date.year);
+        }
+    );
+}
+
+const ascendEdited = arrayDbase => {
+    return arrayDbase.sort(
+        function(a,b){
+            let aTotal, bTotal;
+
+            aTotal = dateEditedCheck(a)
+            bTotal = dateEditedCheck(b);
+
+            return aTotal - bTotal;
+        }
+    )
+}
+
+const descendEdited = arrayDbase => {
+    return arrayDbase.sort(
+        function(a,b){
+            let aTotal, bTotal;
+
+            aTotal = dateEditedCheck(a)
+            bTotal = dateEditedCheck(b);
+
+            return bTotal - aTotal;
+        }
+    )
+}
+
+const dateEditedCheck = ({lastUpdated,date}) => {
+    let total;
+
+    if(lastUpdated){
+        total = totalDate(lastUpdated.day, lastUpdated.month, lastUpdated.year);
+    }else{
+        total = totalDate(date.day, date.month, date.year);
+    }
+
+    return total;
+}
+
+const totalDate = (day, month,year) => {
+    return ((day + ((month + 1) * 30.4) + (year * 365)))
 }
 
 const dateNowGet = () => {
