@@ -173,6 +173,27 @@ body .mainArticle {
 }
 
 /* main Article */
+.mainArticle .orderListCon {
+    background-color: cadetblue;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.mainArticle .orderListCon select {
+    height: 2rem;
+    width: 20rem;
+    font-size: 1.5rem;
+    margin-left: 2rem;
+    margin-right: auto;
+    background-color: cadetblue;
+    color: whitesmoke;
+    text-shadow: rgba(255,255,255,.2) 1px 2px 1px;
+    outline: none;
+    border: none;
+    font-weight: 600;
+}
+
 .mainArticle .mainList li h3 {
     padding: .25rem .5rem;
     font-size: 2.5rem;

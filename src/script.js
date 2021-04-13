@@ -40,12 +40,17 @@ let currentFile = null;
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
-    clearNotes();
     nodeLoad();
 }
 
-const orderList = () => {
-    let newDbase = _DATABASE;
+const orderList = whichOrder => {
+    let newDbase = [];
+
+    _DATABASE.forEach(item=>{
+        if(item.user===currentUser){
+            newDbase.push(item);
+        }
+    })
 
     local_DATABASE.forEach(item=>{
         if(item){
@@ -53,6 +58,22 @@ const orderList = () => {
         }
     })
 
+    if(whichOrder==="ascendCreated"){
+        console.log(descendCreated(newDbase));
+        nodeLoad(ascendCreated(newDbase));
+    }else if(whichOrder==="descendCreated"){
+        console.log(ascendCreated(newDbase));
+        nodeLoad(descendCreated(newDbase));
+    }else if(whichOrder==="ascendEdited"){
+        console.log(ascendEdited(newDbase));
+        nodeLoad(ascendEdited(newDbase));
+    }else if(whichOrder==="descendEdited"){
+        console.log(descendEdited(newDbase));
+        nodeLoad(descendEdited(newDbase));
+    }else{
+        nodeLoad();
+    }
+    
     // console.log(descendCreated(newDbase));
     
     // console.log(ascendCreated(newDbase));
@@ -194,7 +215,6 @@ const userLogInOut = (loggingIn = true) => {
         btn2.textContent = "Register";
         currentUser=null;
     }
-    clearNotes();
     nodeLoad();
 }
 
@@ -404,12 +424,11 @@ const deleteNote = () => {
         local_DATABASE = local_DATABASE.filter(item=>item.id!==Number(id));
     }
 
-    clearNotes();
     nodeLoad();
 }
 
 const createNote = (title=null, body=null, id=null, userN=null) => {
-    const ul = document.querySelector(".mainArticle ul")
+    const ul = document.querySelector(".mainArticle .mainList")
     const li = document.createElement("li");
     const h3 = document.createElement("h3");
 
@@ -456,23 +475,30 @@ const clearNotes = () => {
     })
 }
 
-const nodeLoad = () => {
-    let lastID;
+const nodeLoad = (altDbase = null) => {
+    clearNotes();
 
-    if(_DATABASE){
-        _DATABASE.forEach(item=>{
-            if(currentUser===item.user){
-                createNote(item.title, item.body, item.id, item.user);
-                lastID=item.id
-            }
-        })
-    }
-
-    if(local_DATABASE){
-        local_DATABASE.forEach(item=>{
+    var lastID;
+    if(altDbase){
+        altDbase.forEach(item=>{
             createNote(item.title, item.body, item.id, item.user);
-            lastID++;
         })
+    }else{
+        if(_DATABASE){
+            _DATABASE.forEach(item=>{
+                if(currentUser===item.user){
+                    createNote(item.title, item.body, item.id, item.user);
+                    lastID=item.id
+                }
+            })
+        }
+
+        if(local_DATABASE){
+            local_DATABASE.forEach(item=>{
+                createNote(item.title, item.body, item.id, item.user);
+                lastID++;
+            })
+        }
     }
 
     createNote();
@@ -584,14 +610,23 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             delBtn.disabled = true;
             activeNote(false, true);
             if(currentUser){
-                locallySaveCheck.classList.remove("hiddenSection");
-                locallySaveCheck.childNodes[3].disabled = false;
+                if(locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
+                    locallySaveCheck.childNodes[1].innerText = "locally";
+                    locallySaveCheck.childNodes[3].classList.remove("hiddenSection");
+                    locallySaveCheck.childNodes[3].disabled = false;
+                }
             }
         }else{
             let id = noteID;
-            let title, body;
+            let title, body, date;
 
             const addBtn = document.querySelector(".addBtn");
+
+            if(!locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
+                locallySaveCheck.childNodes[3].classList.add("hiddenSection");
+                locallySaveCheck.childNodes[3].disabled=true;
+            }
+
             addBtn.classList.toggle("addBtn");
             addBtn.classList.toggle("editBtn");
             addBtn.textContent = "Edit";
@@ -604,6 +639,10 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
                             title = titleInput = item.title;
                             body = bodyInput = item.body;
                             editable = item.editable;
+                            date = `created: ${item.date.month+1}/${item.date.day}/${item.date.year}`;
+                            if(item.lastUpdated){
+                                date += ` edited: ${item.lastUpdated.month+1}/${item.lastUpdated.day}/${item.lastUpdated.year}`;
+                            }
                         }
                     }
                 })
@@ -614,10 +653,15 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
                         title = titleInput = item.title;
                         body = bodyInput = item.body;
                         editable = item.editable;
+                        date = `created: ${item.date.month+1}/${item.date.day}/${item.date.year}`;
+                        if(item.lastUpdated){
+                            date+=` edited: ${item.lastUpdated.month+1}/${item.lastUpdated.day}/${item.lastUpdated.year}`;
+                        }
                     }
                 })
             }
 
+            locallySaveCheck.childNodes[1].innerText = date;
             document.querySelector(`${nodeClass} input`).value = title;
             document.querySelector(`${nodeClass} textarea`).value = body;
 
@@ -652,9 +696,6 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
 }
 
 const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
-
-    const locallySaveCheck = document.querySelector(".extraInput .saveLocallyContainer");
-
     if(nodeClass === ".loginRegisterMenu"){
         if(document.querySelector(nodeClass).classList.contains("registerRN") || initialize){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
@@ -670,10 +711,8 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             addBtn.textContent = "Add Note";
             document.querySelector(".noteMenu").classList.toggle("userEdit");
         }else{
-            locallySaveCheck.classList.add("hiddenSection");
-            locallySaveCheck.childNodes[3].checked = false;
+            document.querySelector(".extraInput .saveLocallyContainer").childNodes[3].checked = false;
             saveLocalChk = false;
-            locallySaveCheck.childNodes[3].disabled = true;
         }
         activeNote(false,false);
     }
@@ -914,6 +953,7 @@ const updateUserDBASE = (username, propName, propValue) => {
 
 window.onload = () =>{
     const sections = document.querySelectorAll("body section");
+    const selectOrder = document.querySelector(".mainArticle .orderListCon select");
     const sectionCloseBtns = document.querySelectorAll("section .closeBtn");
     const logOutBtn = document.querySelector(".userPanel li .logOutBtn");
     //loginRegister
@@ -941,7 +981,6 @@ window.onload = () =>{
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,true);   
     });
-
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
             titleInput = e.target.value;
@@ -994,6 +1033,18 @@ window.onload = () =>{
     saveLocallyCheck.addEventListener("change", chkLocallySave);
     //userSettings
     userpfpInput.addEventListener("change", pfpUpload);
+
+    selectOrder.selectedIndex = 0;
+
+    let init = true;
+
+    selectOrder.addEventListener("change",({target})=>{
+        if(!init){
+            orderList(target.value);
+        }else{
+            init=false;
+        }
+    })
 
     if(!checkLoggedAccount()){
         nodeLoad();
