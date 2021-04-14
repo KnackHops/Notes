@@ -221,10 +221,10 @@ body .loginRegisterMenu {
 
 body .noteMenu {
     padding: 1rem 1.5rem;
-    height: 25rem;
-    width: 35rem;
+    height: 30rem;
+    width: 45rem;
     top: 20%;
-    left: calc(50% - 17.5rem);
+    left: calc(50% - 22.5rem);
 }
 
 
@@ -326,13 +326,33 @@ section .closeBtn:hover {
 
 .noteMenu .extraInput {
     width: 100%;
-    flex-flow: row wrap;
-    justify-content: space-between;
+    flex-flow: row nowrap;
+    align-items: center;
+    height: 3rem;
 }
 
-.noteMenu .extraInput p {
-    width: 22%;
+.noteMenu .extraInput p:nth-child(1) {
+    flex: 1;
+    display: flex;
+    justify-content: space-around;
 }
+
+.noteMenu .extraInput p:nth-child(2){
+    flex: 4;
+    display: flex;
+    justify-content: flex-end;
+    padding-right: .5rem;
+}
+
+.noteMenu.userEdit .extraInput p:nth-child(2){
+    padding: 0;
+    justify-content: center;
+}
+
+.noteMenu .extraInput p:nth-child(3){
+    flex: 0;
+}
+
 .noteMenu .extraInput p label{
     font-size: 1.5rem;
 }

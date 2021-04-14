@@ -611,7 +611,7 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             activeNote(false, true);
             if(currentUser){
                 if(locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
-                    locallySaveCheck.childNodes[1].innerText = "locally";
+                    locallySaveCheck.childNodes[1].innerText = "Save Locally: ";
                     locallySaveCheck.childNodes[3].classList.remove("hiddenSection");
                     locallySaveCheck.childNodes[3].disabled = false;
                 }
@@ -745,13 +745,20 @@ const clearInputs = whichNode => {
 }
 
 const activeNote = (fromEdit=false, isActive = false) => {
+    
+    const noteMenu = document.querySelector(".noteMenu");
 
     document.querySelector(".noteMenu input").disabled = !isActive;
     document.querySelector(".noteMenu textarea").disabled = !isActive;
     document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
-    document.querySelector(".noteMenu").classList.toggle("nonEditable");
 
     if(fromEdit){
+        if(isActive && noteMenu.classList.contains("nonEditable")){
+            noteMenu.classList.toggle("nonEditable");
+        }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
+            noteMenu.classList.toggle("nonEditable");
+        }
+
         let id = currentOpenID;
 
         if(id.indexOf("note")===0){
@@ -772,6 +779,10 @@ const activeNote = (fromEdit=false, isActive = false) => {
             })
         }
         
+    }else{
+        if(noteMenu.classList.contains("nonEditable")){
+            noteMenu.classList.toggle("nonEditable");
+        }
     }
 }
 
