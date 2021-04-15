@@ -11,11 +11,13 @@ let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editab
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
+    mobile: null,
     pfp: "default",
     nickname: null
 },{
     username: "barrys",
     email: "barry@gmail.com",
+    mobile: null,
     pfp: "default",
     nickname: null
 }];
@@ -610,21 +612,32 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             delBtn.disabled = true;
             activeNote(false, true);
             if(currentUser){
+                if(locallySaveCheck.classList.contains("hiddenSection")){
+                    locallySaveCheck.classList.remove("hiddenSection");
+                }
                 if(locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
                     locallySaveCheck.childNodes[1].innerText = "Save Locally: ";
                     locallySaveCheck.childNodes[3].classList.remove("hiddenSection");
-                    locallySaveCheck.childNodes[3].disabled = false;
+                    locallySaveCheck.childNodes[3].disabled ? locallySaveCheck.childNodes[3].disabled = false : "";
+                }
+            }else{
+                if(!locallySaveCheck.classList.contains("hiddenSection")){
+                    locallySaveCheck.classList.add("hiddenSection");
+                    locallySaveCheck.childNodes[3].disabled ? "" : locallySaveCheck.childNodes[3].disabled = true;
                 }
             }
         }else{
             let id = noteID;
             let title, body, date;
-
             const addBtn = document.querySelector(".addBtn");
+
+            if(locallySaveCheck.classList.contains("hiddenSection")){
+                locallySaveCheck.classList.remove("hiddenSection");
+            }
 
             if(!locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
                 locallySaveCheck.childNodes[3].classList.add("hiddenSection");
-                locallySaveCheck.childNodes[3].disabled=true;
+                locallySaveCheck.childNodes[3].disabled ? "" : locallySaveCheck.childNodes[3].disabled = true;
             }
 
             addBtn.classList.toggle("addBtn");
@@ -679,7 +692,9 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
         }
     }else if (nodeClass===".userSettings"){
         activePanel();
+        const phoneEmailCon = document.querySelector(".phoneEmailCon");
         const userObj = searchUserDBASE('username',currentUser,'nickname','pfp');
+        const emailNumObj = searchUserDBASE('username', currentUser, 'email', 'mobile');
 
         userObj['nickname'] ? nickLabelChange(userObj['nickname']) : nickLabelChange();
 
@@ -690,6 +705,13 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             pfpChange(userObj['pfp']);
             pfpEditCheck(true);
         }
+
+        phoneEmailCon.childNodes[3].childNodes[1].textContent = emailNumObj.email;
+
+        if(emailNumObj.mobile){
+            phoneEmailCon.childNodes[1].childNodes[1].textContent = emailNumObj.mobile;
+        }
+        
     }
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
@@ -711,10 +733,20 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             addBtn.textContent = "Add Note";
             document.querySelector(".noteMenu").classList.toggle("userEdit");
         }else{
-            document.querySelector(".extraInput .saveLocallyContainer").childNodes[3].checked = false;
-            saveLocalChk = false;
+            const saveLocallyCon = document.querySelector(".extraInput .saveLocallyContainer");
+
+            if(!saveLocallyCon.childNodes[3].disabled){
+                saveLocallyCon.childNodes[3].disabled = true;
+                saveLocallyCon.childNodes[3].checked = false;
+                saveLocalChk = false;
+            }
         }
         activeNote(false,false);
+    }else if(nodeClass===".userSettings"){
+        const phoneEmailCon = document.querySelector(".phoneEmailCon");
+        
+        phoneEmailCon.childNodes[3].childNodes[1].textContent = "None";
+        phoneEmailCon.childNodes[1].childNodes[1].textContent = "None";
     }
 
     clearInputs(nodeClass);
@@ -820,7 +852,6 @@ const checkLoggedAccount = () => {
 const accountLogged = isLogged => {
     isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser) : localStorage.removeItem(_USERLOGGEDKEY);
 }
-
 
 const saveProfile = () => {
     //checks if currentFile was changed
@@ -987,10 +1018,12 @@ window.onload = () =>{
     const userpfpInput = document.querySelector("#userpfpInput");
     const saveProfileBtn = document.querySelector(".saveProfileBtn");
     const clearNickname = document.querySelector(".clearNickname");
+    //otherVar
+    let init = true;
 
     activePanel();
     sections.forEach(section=>{
-        closeBtnClicked("."+section.classList[0],false,true);   
+        closeBtnClicked("."+section.classList[0],false,init);   
     });
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
@@ -1046,8 +1079,6 @@ window.onload = () =>{
     userpfpInput.addEventListener("change", pfpUpload);
 
     selectOrder.selectedIndex = 0;
-
-    let init = true;
 
     selectOrder.addEventListener("change",({target})=>{
         if(!init){
