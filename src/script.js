@@ -480,7 +480,8 @@ const clearNotes = () => {
 const nodeLoad = (altDbase = null) => {
     clearNotes();
 
-    var lastID;
+    let lastID;
+
     if(altDbase){
         altDbase.forEach(item=>{
             createNote(item.title, item.body, item.id, item.user);
@@ -587,7 +588,7 @@ const checkingOpenedFrames = () => {
 }
 
 const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
-    checkingOpenedFrames();
+    nodeClass===".activeCon" ? "" : checkingOpenedFrames() ;
 
     if(nodeClass===".loginRegisterMenu"){
         if(registerClass==="registerBtn"){
@@ -705,11 +706,14 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
             pfpChange(userObj['pfp']);
             pfpEditCheck(true);
         }
-
         phoneEmailCon.childNodes[3].childNodes[1].textContent = emailNumObj.email;
+
 
         if(emailNumObj.mobile){
             phoneEmailCon.childNodes[1].childNodes[1].textContent = emailNumObj.mobile;
+        }else {
+            phoneEmailCon.childNodes[1].classList.add("activeBtnCon");
+            phoneEmailCon.childNodes[1].childNodes[1].addEventListener("click",clicked);
         }
         
     }
@@ -744,9 +748,12 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         activeNote(false,false);
     }else if(nodeClass===".userSettings"){
         const phoneEmailCon = document.querySelector(".phoneEmailCon");
-        
+        if(phoneEmailCon.childNodes[1].classList.contains("activeBtnCon")){
+            phoneEmailCon.childNodes[1].classList.remove("activeBtnCon");
+            phoneEmailCon.childNodes[1].childNodes[1].removeEventListener("click",clicked);
+            phoneEmailCon.childNodes[1].childNodes[1].textContent = "Add";
+        }
         phoneEmailCon.childNodes[3].childNodes[1].textContent = "None";
-        phoneEmailCon.childNodes[1].childNodes[1].textContent = "None";
     }
 
     clearInputs(nodeClass);
