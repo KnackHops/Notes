@@ -507,6 +507,7 @@ const nodeLoad = (altDbase = null) => {
     createNote();
 }
 
+//btn clicked terminal
 const clicked = e => {
     e.preventDefault();
     let btnClass = e.target.classList[0];
@@ -521,7 +522,8 @@ const clicked = e => {
     || btnClass==="userPanelBtn" 
     || btnClass==="logOutBtn"
     || btnClass==="saveProfileBtn"
-    || btnClass==="clearNickname"){
+    || btnClass==="clearNickname"
+    || btnClass==="phoneBtn"){
         nodeClass=btnClass;
     }else{
         if(parent.classList.contains("defaultNote")){
@@ -536,6 +538,8 @@ const clicked = e => {
             }
         }
     }
+
+    console.log(nodeClass);
 
     if(nodeClass==="addBtn"){
         if(titleInput || bodyInput){
@@ -572,23 +576,30 @@ const clicked = e => {
         saveProfile();
     }else if(nodeClass==="clearNickname"){
         nickClear();
+    }else if(nodeClass==="phoneBtn"){
+        menuClicked(".activePhoneCon");
+        console.log("ello");
     }else{
         menuClicked(nodeClass,e.target.className);
     }
 }
 
 const checkingOpenedFrames = () => {
-    document.querySelectorAll(".activeSection").forEach(section=>{
+    document.querySelectorAll("sections.activeSection").forEach(section=>{
             if(section.classList.contains("userEdit")){
                 closeBtnClicked("."+ section.classList[0], true);
             }else{
                 closeBtnClicked("." + section.classList[0]);
             }
     })
+
+    if(document.querySelector("aside.activePhoneCon").classList.contains("activeSection")){
+        menuClicked(".activePhoneCon");
+    }
 }
 
 const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
-    nodeClass===".activeCon" ? "" : checkingOpenedFrames() ;
+    nodeClass===".activePhoneCon" ? "" : checkingOpenedFrames() ;
 
     if(nodeClass===".loginRegisterMenu"){
         if(registerClass==="registerBtn"){
@@ -712,10 +723,17 @@ const menuClicked = (nodeClass, registerClass=null, noteID=false) => {
         if(emailNumObj.mobile){
             phoneEmailCon.childNodes[1].childNodes[1].textContent = emailNumObj.mobile;
         }else {
-            phoneEmailCon.childNodes[1].classList.add("activeBtnCon");
+            phoneEmailCon.childNodes[1].classList.add("activePhoneConBtn");
             phoneEmailCon.childNodes[1].childNodes[1].addEventListener("click",clicked);
         }
         
+    }else if (nodeClass===".activePhoneCon"){
+        const phoneActBtn = document.querySelector(".phoneEmailCon > p:nth-child(1) > button");
+        const phoneBtn = document.querySelector("aside.activePhoneCon > p:nth-Child(2) > .phoneBtn");
+
+        phoneActBtn.textContent==="Cancel" ? phoneActBtn.textContent = "Add" : phoneActBtn.textContent = "Cancel";
+        phoneBtn.disabled = !phoneBtn.disabled;
+        document.querySelector("section.userSettings").classList.toggle("asideOpen");
     }
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
@@ -1025,6 +1043,7 @@ window.onload = () =>{
     const userpfpInput = document.querySelector("#userpfpInput");
     const saveProfileBtn = document.querySelector(".saveProfileBtn");
     const clearNickname = document.querySelector(".clearNickname");
+    const phoneBtn = document.querySelector("aside.activePhoneCon > p:nth-Child(2) > .phoneBtn");
     //otherVar
     let init = true;
 
@@ -1063,7 +1082,8 @@ window.onload = () =>{
         e.target.parentNode.classList.toggle("focusTT");
     }
 
-    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, saveProfileBtn, clearNickname].forEach(item=>item.addEventListener("click",clicked));
+    phoneBtn.disabled = true;
+    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, saveProfileBtn, clearNickname, phoneBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, bodyBox, nicknameInput].forEach(item=>item.addEventListener("input",insertInput));
 
     window.addEventListener("keydown", e => {
@@ -1088,11 +1108,7 @@ window.onload = () =>{
     selectOrder.selectedIndex = 0;
 
     selectOrder.addEventListener("change",({target})=>{
-        if(!init){
-            orderList(target.value);
-        }else{
-            init=false;
-        }
+        orderList(target.value);
     })
 
     if(!checkLoggedAccount()){
