@@ -441,7 +441,7 @@ body section.userSettings.asideOpen {
     outline: none;
 }
 
-.userSettings > div > .activePhoneConBtn > button:hover {
+.userSettings > div > .activeMobileConBtn > button:hover {
     cursor: pointer;
     background-color: rgba(255,255,255,.2);
     border-radius: 2rem;
@@ -451,7 +451,7 @@ body section.userSettings.asideOpen {
     margin-bottom: 1rem;
 }
 
-.userSettings > aside.activePhoneCon {
+.userSettings > aside.activeMobileCon {
     position: fixed;
     transition: all .2s;
     left: 50%;
@@ -466,21 +466,21 @@ body section.userSettings.asideOpen {
     border-bottom-right-radius: 1rem;
 }
 
-.userSettings > aside.activePhoneCon.hiddenSection {
+.userSettings > aside.activeMobileCon.hiddenSection {
     opacity: 0;
 }
 
-.userSettings > aside.activePhoneCon.activeSection {
+.userSettings > aside.activeMobileCon.activeSection {
     opacity: 1;
     transform: translateX(20.5rem);
     /* left: calc(50% + 8rem); */
 }
 
-.userSettings > aside.activePhoneCon > p {
+.userSettings > aside.activeMobileCon > p {
     margin-bottom: 1rem;
 }
 
-.userSettings > aside.activePhoneCon > p:nth-child(2) {
+.userSettings > aside.activeMobileCon > p:nth-child(2) {
     justify-content: flex-end;
 }
 
