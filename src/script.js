@@ -1017,12 +1017,22 @@ const nickClear = () => {
 
 const nickLabelChange = (nick="none") => {
     const userNickNode = document.querySelector(".usernameNickname");
+    const nickClrBtn = document.querySelector(".userSettings p > .clearNickname");
     
     if(nick){
         let textC = `${currentUser}`;
         
         if(nick!=="none"){
-            textC+=`[${nick}]`   
+            textC+=`[${nick}]`;
+            if(nickClrBtn.classList.contains("hiddenSection")){
+                nickClrBtn.disabled = false;
+                nickClrBtn.classList.remove("hiddenSection");
+            }
+        }else{
+            if(!nickClrBtn.classList.contains("hiddenSection")){
+                nickClrBtn.disabled = true;
+                nickClrBtn.classList.add("hiddenSection");
+            }
         }
 
         userNickNode.textContent=textC;
