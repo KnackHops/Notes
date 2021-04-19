@@ -125,6 +125,10 @@ body .mainArticle {
     border-radius: 50%;
 }
 
+.pfpContainer.pfpClickable {
+    cursor: pointer;
+}
+
 .pfpContainer.pfpClickable:hover:before {
     position: absolute;
     content: "";
@@ -202,6 +206,19 @@ body .mainArticle {
 
 .mainList li:hover {
     cursor: pointer;
+}
+
+input, textarea {
+    border-radius: .75rem;
+    padding: 0 .25rem;
+}
+
+input:hover, textarea:hover {
+    box-shadow: .05rem .1rem .5rem blanchedalmond;
+}
+
+input:disabled:hover, textarea:disabled:hover {
+    box-shadow: none;
 }
 
 /* sections */
@@ -381,6 +398,14 @@ body section.userSettings.asideOpen {
     align-items: center;
 }
 
+.userSettings > p:nth-child(3) {
+    padding: 0 1rem;
+}
+
+.userSettings > p:nth-child(4) {
+    padding: 0 2rem;
+}
+
 .userSettings .closeBtn + p {
     justify-content: flex-start;
 }
@@ -394,11 +419,17 @@ body section.userSettings.asideOpen {
     font-size: 2rem;
 }
 
-.userSettings > p:nth-child(3) label {
+.userSettings > p:nth-child(3) > .uploadLabel {
     margin-left: 1rem;
     padding: .25rem 1rem;
     border-radius: 1rem;
     background-color: rgba(255,255,255,.2);
+}
+
+.userSettings > p:nth-child(3) > .uploadLabel:hover {
+    cursor: pointer;
+    color: black;
+    background-color: rgba(255,255,255,.7);
 }
 
 .userSettings p .pfpContainer {
