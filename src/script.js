@@ -509,7 +509,7 @@ const nodeLoad = (altDbase = null) => {
     createNote();
 }
 
-//btn clicked terminal
+//clickedterminal
 const clicked = e => {
     e.preventDefault();
     let btnClass = e.target.classList[0];
@@ -525,6 +525,7 @@ const clicked = e => {
     || btnClass==="logOutBtn"
     || btnClass==="saveProfileBtn"
     || btnClass==="clearNickname"
+    || btnClass==="nickNameBtn"
     || btnClass==="mobileBtn"){
         nodeClass=btnClass;
     }else{
@@ -577,11 +578,13 @@ const clicked = e => {
     }else if(nodeClass==="saveProfileBtn"){
         saveProfile();
     }else if(nodeClass==="clearNickname"){
-        nickClear();
-    }else if(nodeClass==="mobileBtn"){
-        userMobileAdd();
+        console.log("clear nickname");
     }else{
-        menuClicked(nodeClass,e.target.className);
+        if(nodeClass==="nickNameBtn" || nodeClass==="mobileBtn"){
+            menuClicked(".userSidePanel");
+        }else{
+            menuClicked(nodeClass,e.target.className);
+        }
     }
 }
 
@@ -594,14 +597,14 @@ const checkingOpenedFrames = () => {
             }
     })
 
-    if(document.querySelector("aside.activeMobileCon").classList.contains("activeSection")){
-        menuClicked(".activeMobileCon");
+    if(document.querySelector("aside.userSidePanel").classList.contains("activeSection")){
+        menuClicked(".userSidePanel");
     }
 }
 
 // mainmenu handler
 const menuClicked = (nodeClass, registerClass=null) => {
-    nodeClass===".activeMobileCon" ? "" : checkingOpenedFrames() ;
+    nodeClass===".userSidePanel" ? "" : checkingOpenedFrames() ;
 
     if(nodeClass===".loginRegisterMenu"){
         loginRegisterMenuPanelHandler(nodeClass, registerClass);
@@ -609,8 +612,8 @@ const menuClicked = (nodeClass, registerClass=null) => {
         noteMenuPanelHandler(nodeClass);
     }else if (nodeClass===".userSettings"){
         userSettingsPanelHandler();
-    }else if (nodeClass===".activeMobileCon"){
-        mobilePanelHandler();
+    }else if (nodeClass===".userSidePanel"){
+        sidePanelHandler();
     }
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
@@ -642,14 +645,13 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         }
         activeNote(false,false);
     }else if(nodeClass===".userSettings"){
-        const mobileEmailCon = document.querySelector(".mobileEmailCon");
-        if(mobileEmailCon.childNodes[1].classList.contains("activeBtnCon")){
-            mobileEmailCon.childNodes[1].classList.remove("activeBtnCon");
-            mobileEmailCon.childNodes[1].childNodes[1].removeEventListener("click",clicked);
+        const sidePanelControl = document.querySelector(".sidePanelControl");
+        if(sidePanelControl.childNodes[1].classList.contains("activeBtnCon")){
+            sidePanelControl.childNodes[1].classList.remove("activeBtnCon");
+            sidePanelControl.childNodes[1].childNodes[1].removeEventListener("click",clicked);
             _userSettings = null;
             userSettings = null;
         }
-        mobileEmailCon.childNodes[3].childNodes[1].textContent = "None";
     }
 
     clearInputs(nodeClass);
@@ -667,7 +669,7 @@ const clearInputs = whichNode => {
         document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
     }else if(whichNode===".userSettings"){
         pfpRemove(null);
-        nickLabelChange(null);
+        // nickLabelChange(null);
     }else{
         document.querySelector(`${whichNode} input`).value="";
         document.querySelector(`${whichNode} textarea`).value="";
@@ -843,11 +845,9 @@ const noteMenuPanelHandler = nodeClass => {
 
 const userSettingsPanelHandler = () => {
     activePanel();
-    const mobileEmailCon = document.querySelector(".mobileEmailCon");
+    const sidePanelControl = document.querySelector(".sidePanelControl");
     const userObj = searchUserDBASE('username',currentUser,'nickname','pfp');
     const emailNumObj = searchUserDBASE('username', currentUser, 'email', 'mobile');
-
-    userObj['nickname'] ? nickLabelChange(userObj['nickname']) : nickLabelChange();
 
     if(userObj['pfp'] === "default"){
         pfpChange(_DEFAULTPFP);
@@ -856,41 +856,50 @@ const userSettingsPanelHandler = () => {
         pfpChange(userObj['pfp']);
         pfpEditCheck(true);
     }
-    mobileEmailCon.childNodes[3].childNodes[1].textContent = emailNumObj.email;
-
-
-    if(emailNumObj.mobile){
-        mobileEmailCon.childNodes[1].childNodes[1].textContent = _userMobile = emailNumObj.mobile;
-    }
     
-    mobileEmailCon.childNodes[1].classList.add("activeMobileConBtn");
-    mobileEmailCon.childNodes[1].childNodes[1].addEventListener("click",clicked);
+    let x = 1;
+    [userObj.nickname, emailNumObj.mobile, emailNumObj.email].forEach(item=>{
+        if(item){
+            userSettingsLabelChange(sidePanelControl.childNodes[x].childNodes[1], item);
+        }
+        x+=2;
+    })
+    x = 0;
+
+    [sidePanelControl.childNodes[1], sidePanelControl.childNodes[3]].forEach(item=>{
+        item.classList.add("userSidePanelBtn");
+        item.childNodes[1].addEventListener("click",clicked);
+    })
 }
 
-const mobilePanelHandler = () => {
-    const mobileActBtn = document.querySelector(".mobileEmailCon > p:nth-child(1) > button");
-    const mobileBtn = document.querySelector("aside.activeMobileCon > p:nth-Child(2) > .mobileBtn");
+const userSettingsLabelChange = (btnNode, label="Add") => {
+    btnNode.textContent = label;
+}
+
+const sidePanelHandler = () => {
+    // const mobileActBtn = document.querySelector(".sidePanelControl > p:nth-child(1) > button");
+    // const mobileBtn = document.querySelector("aside.userSidePanel > p:nth-Child(2) > .mobileBtn");
     const userSettings = document.querySelector("section.userSettings");
 
     if(userSettings.classList.contains("asideOpen")){
-        if(_userMobile){
-            mobileActBtn.textContent = _userMobile;
-        }else{
-            mobileActBtn.textContent = "Add";
-        }
-        document.querySelector("aside.activeMobileCon > p:nth-Child(1) > #userMobile").value = "";
+        // if(_userMobile){
+        //     mobileActBtn.textContent = _userMobile;
+        // }else{
+        //     mobileActBtn.textContent = "Add";
+        // }
+        // document.querySelector("aside.userSidePanel > p:nth-Child(1) > #userMobile").value = "";
     }else{
-        console.log(_userMobile);
-        if(_userMobile){
-            document.querySelector("aside.activeMobileCon > p:nth-Child(1) > #userMobile").value = userMobile =  _userMobile;
-            mobileBtn.textContent="Edit";
-        }else{
-            mobileBtn.textContent="Add";
-        }
-        mobileActBtn.textContent = "Cancel";
+        // console.log(_userMobile);
+        // if(_userMobile){
+        //     document.querySelector("aside.userSidePanel > p:nth-Child(1) > #userMobile").value = userMobile =  _userMobile;
+        //     mobileBtn.textContent="Edit";
+        // }else{
+        //     mobileBtn.textContent="Add";
+        // }
+        // mobileActBtn.textContent = "Cancel";
     }
 
-    mobileBtn.disabled = !mobileBtn.disabled;
+    // mobileBtn.disabled = !mobileBtn.disabled;
     document.querySelector("section.userSettings").classList.toggle("asideOpen");
 }
 
@@ -926,8 +935,8 @@ const saveProfile = () => {
 
     if(nickName){
         updateUserDBASE(currentUser,'nickname',nickName);
-        nickLabelChange(nickName);
-        nickBtnChange(nickName);
+        // nickLabelChange(nickName);
+        // nickBtnChange(nickName);
     }
 
     updateUserDBASE(currentUser,'mobile',_userMobile);
@@ -946,7 +955,7 @@ const userMobileAdd = () => {
         }
     }
 
-    menuClicked(".activeMobileCon");
+    menuClicked(".userSidePanel");
 }
 
 const pfpUpload = e => {
@@ -1012,44 +1021,17 @@ const pfpNavChange = newPfP => {
 const nickClear = () => {
     updateUserDBASE(currentUser, 'nickname', null);
     nickName=null;
-    nickBtnChange(currentUser);
+    panelBtnChange(currentUser);
 }
 
-const nickLabelChange = (nick="none") => {
-    const userNickNode = document.querySelector(".usernameNickname");
-    const nickClrBtn = document.querySelector(".userSettings p > .clearNickname");
+const nickLabelChange = (nick="Add") => {
+    const userNickName = document.querySelector(".sidePanelControl > p:nth-child(1) > button");
     
-    if(nick){
-        let textC = `${currentUser}`;
-        
-        if(nick!=="none"){
-            textC+=`[${nick}]`;
-            if(nickClrBtn.classList.contains("hiddenSection")){
-                nickClrBtn.disabled = false;
-                nickClrBtn.classList.remove("hiddenSection");
-            }
-        }else{
-            if(!nickClrBtn.classList.contains("hiddenSection")){
-                nickClrBtn.disabled = true;
-                nickClrBtn.classList.add("hiddenSection");
-            }
-        }
-
-        userNickNode.textContent=textC;
-    }else{
-        userNickNode.textContent="Username/Nickname";
-    }
+    userNickName = nick;
 }
 
-const nickBtnChange = (userNickName) => {
-    
-    document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = userNickName;
-    document.querySelector("#nicknameInput").value="";
-    if(userNickName!==currentUser){
-        nickLabelChange(nicknameProp);
-    }else{
-        nickLabelChange();
-    }
+const panelBtnChange = user => {
+    document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = user;
 }
 
 const searchUserDBASE = (propName, propValue, opPropName=null, sndOpPropName=null) => {
@@ -1102,13 +1084,11 @@ window.onload = () =>{
     const chckBox = document.querySelector(".noteMenu .extraInput .checkEditContainer input");
     const saveLocallyCheck = document.querySelector(".noteMenu .extraInput .saveLocallyContainer input");
     //userSettings
-    const nicknameInput = document.querySelector("#nicknameInput");
     const userSettings = document.querySelector(".userSettingsBtn");
     const userpfpInput = document.querySelector("#userpfpInput");
     const saveProfileBtn = document.querySelector(".saveProfileBtn");
-    const clearNickname = document.querySelector(".clearNickname");
-    const mobileBtn = document.querySelector("aside.activeMobileCon > p:nth-Child(2) > .mobileBtn");
-    const userMobileInput = document.querySelector("aside.activeMobileCon > p:nth-Child(1) > #userMobile");
+    const sidePanelBtn = document.querySelector("aside.userSidePanel > p:nth-Child(2) > .sidePanelBtn");
+    const sidePanelInp = document.querySelector("aside.userSidePanel > p:nth-Child(1) > #sidePanelInp");
     //otherVar
     let init = true;
 
@@ -1129,7 +1109,7 @@ window.onload = () =>{
             userEmail = e.target.value;
         }else if(e.target.id === "nicknameInput"){
             nickName = e.target.value;
-        }else if(e.target.id === "userMobile"){
+        }else if(e.target.id === "sidePanelInp"){
             userMobile = e.target.value;
             if(_userMobile){
                 if(!userMobile){
@@ -1156,9 +1136,8 @@ window.onload = () =>{
         e.target.parentNode.classList.toggle("focusTT");
     }
 
-    mobileBtn.disabled = true;
-    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, saveProfileBtn, clearNickname, mobileBtn].forEach(item=>item.addEventListener("click",clicked));
-    [usernameInput, emailInput, passwordInput, titleBox, bodyBox, nicknameInput, userMobileInput].forEach(item=>item.addEventListener("input",insertInput));
+    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
+    [usernameInput, emailInput, passwordInput, titleBox, bodyBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
 
     window.addEventListener("keydown", e => {
         if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
