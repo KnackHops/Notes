@@ -78,23 +78,18 @@
         <section class="userSettings fd fdFlow">
             <p class="closeBtn">x</p>
             <p>
-                <label class="usernameNickname">Username/Nickname</label>
-                <button class="clearNickname">Clear</button>
-            </p>
-            <p>
                 <span class="pfpContainer">  
                     <img src="" alt="profile picture" class="pfp default">
                 </span>
                 <label for="userpfpInput" class="uploadLabel">Upload</label>
                 <input type="file" id="userpfpInput" class="pfpInp" alt="submit" accept="image/*">
             </p>
-            <p>
-                <label for="nicknameInput">Nickname</label>
-                <input type="text" id="nicknameInput" name="user_nickname">
-            </p>
-            <div class="mobileEmailCon">
+            <div class="sidePanelControl">
                 <p>
-                    Phone Number: <button>Add</button>
+                    Nickname: <button class="nickNameBtn">Add</button>
+                </p>
+                <p>
+                    Phone Number: <button class="mobileBtn">Add</button>
                 </p>
                 <p>
                     Email:<span>Nada</span>
@@ -103,13 +98,13 @@
             <p class="saveProfileBtnCon">
                 <button class="saveProfileBtn">Save changes</button>
             </p>
-            <aside class="activeMobileCon fd fdFlow hiddenSection">
+            <aside class="userSidePanel fd fdFlow hiddenSection">
                 <p>
-                    <label for="userMobile">Insert Number: </label>
-                    <input type="tel" id="userMobile">
+                    <label for="sidePanelInp">Insert Number: </label>
+                    <input type="text" id="sidePanelInp">
                 </p>
                 <p class="fd">
-                    <button class="mobileBtn">Add</button>
+                    <button class="sidePanelBtn">Add</button>
                 </p>
             </aside>
         </section>

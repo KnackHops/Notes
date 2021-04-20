@@ -419,14 +419,14 @@ body section.userSettings.asideOpen {
     font-size: 2rem;
 }
 
-.userSettings > p:nth-child(3) > .uploadLabel {
+.userSettings > p:nth-child(2) > .uploadLabel {
     margin-left: 1rem;
     padding: .25rem 1rem;
     border-radius: 1rem;
     background-color: rgba(255,255,255,.2);
 }
 
-.userSettings > p:nth-child(3) > .uploadLabel:hover {
+.userSettings > p:nth-child(2) > .uploadLabel:hover {
     cursor: pointer;
     color: black;
     background-color: rgba(255,255,255,.7);
@@ -445,7 +445,6 @@ body section.userSettings.asideOpen {
 }
 
 .userSettings > div {
-    height: 8rem;
     width: 95%;
     border: .1rem solid grey;
     border-radius: 1.5rem;
@@ -454,7 +453,7 @@ body section.userSettings.asideOpen {
     font-size: 1.75rem;
 }
 
-.userSettings > div > p, .userSettings > div > p:nth-child(2) {
+.userSettings > div p {
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -472,7 +471,7 @@ body section.userSettings.asideOpen {
     outline: none;
 }
 
-.userSettings > div > .activeMobileConBtn > button:hover {
+.userSettings > div > .userSidePanelBtn > button:hover {
     cursor: pointer;
     background-color: rgba(255,255,255,.2);
     border-radius: 2rem;
@@ -482,14 +481,14 @@ body section.userSettings.asideOpen {
     margin-bottom: 1rem;
 }
 
-.userSettings > aside.activeMobileCon {
+.userSettings > aside.userSidePanel {
     position: fixed;
     transition: all .2s;
     left: 50%;
     transform: translateX(5rem);
     z-index: 1;
     height: 10rem;
-    width: 22.5rem;
+    width: 23.1rem;
     margin-top: 16.5rem;
     padding: .5rem;
     background-color: rgba(0,0,0,.7);
@@ -497,21 +496,21 @@ body section.userSettings.asideOpen {
     border-bottom-right-radius: 1rem;
 }
 
-.userSettings > aside.activeMobileCon.hiddenSection {
+.userSettings > aside.userSidePanel.hiddenSection {
     opacity: 0;
 }
 
-.userSettings > aside.activeMobileCon.activeSection {
+.userSettings > aside.userSidePanel.activeSection {
     opacity: 1;
     transform: translateX(20.5rem);
     /* left: calc(50% + 8rem); */
 }
 
-.userSettings > aside.activeMobileCon > p {
+.userSettings > aside.userSidePanel > p {
     margin-bottom: 1rem;
 }
 
-.userSettings > aside.activeMobileCon > p:nth-child(2) {
+.userSettings > aside.userSidePanel > p:nth-child(2) {
     justify-content: flex-end;
 }
 
