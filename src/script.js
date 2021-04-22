@@ -539,6 +539,8 @@ const clicked = e => {
         }
     }
 
+    console.log(nodeClass, "wat");
+
     if(nodeClass==="addBtn"){
         if(titleInput || bodyInput){
             saveNote();
@@ -598,6 +600,8 @@ const menuClicked = (nodeClass, targetClass=null) => {
     let returnVar = true;
     nodeClass===".userSidePanel" ? "" : checkingOpenedFrames();
 
+    console.log(nodeClass, targetClass);
+
     if(nodeClass===".loginRegisterMenu"){
         loginRegisterMenuPanelHandler(nodeClass, targetClass);
     }else if (nodeClass===".noteMenu"){
@@ -607,6 +611,7 @@ const menuClicked = (nodeClass, targetClass=null) => {
     }else if (nodeClass===".userSidePanel"){
         returnVar = sidePanelHandler(targetClass);
     }
+
     if(returnVar){
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
@@ -639,7 +644,11 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         }
         activeNote(false,false);
     }else if(nodeClass===".userSettings"){
-        const sidePanelControl = document.querySelector(".sidePanelControl");
+        const sidePanelControl = document.querySelector(`${nodeClass} .sidePanelControl`);
+
+        if(document.querySelector(nodeClass).classList.contains("asideOpen")){
+            menuClicked(".userSidePanel");
+        }
 
         [sidePanelControl.childNodes[1], sidePanelControl.childNodes[3]].forEach(item=>{
             item.classList.remove("userSidePanelBtn");
@@ -795,13 +804,19 @@ const userSettingsPanelHandler = () => {
     x = 0;
 }
 
-const sidePanelHandler = targetClass => {
+const sidePanelHandler = (targetClass = null) => {
     // const mobileActBtn = document.querySelector(".sidePanelControl > p:nth-child(1) > button");
     // const mobileBtn = document.querySelector("aside.userSidePanel > p:nth-Child(2) > .mobileBtn");
     let returnVar = true;
     const sidePanelControl = document.querySelector(".userSettings > .sidePanelControl");
     const userSideInsertBox = document.querySelector(".userSidePanel > p:nth-child(1)");
     const userSettings = document.querySelector("section.userSettings");
+
+    if(!targetClass){
+        targetClass = userSideInsertBox.childNodes[3].attributes.data_open.value + "Btn";
+    }
+
+    console.log(targetClass);
 
     if(userSettings.classList.contains("asideOpen") && !userSideInsertBox.parentNode.classList.contains("hiddenSection") && targetClass.replace("Btn","")===userSideInsertBox.childNodes[3].attributes.data_open.value){
         if(userSideInsertBox.childNodes[3].attributes.data_open.value==="nickName"){
@@ -810,14 +825,8 @@ const sidePanelHandler = targetClass => {
             sidePanelControl.childNodes[3].childNodes[1].textContent = "Add";
         }
         userSideInsertBox.childNodes[3].removeAttribute("data_open");
-        // if(_userMobile){
-        //     mobileActBtn.textContent = _userMobile;
-        // }else{
-        //     mobileActBtn.textContent = "Add";
-        // }
-        // document.querySelector("aside.userSidePanel > p:nth-Child(1) > #userMobile").value = "";
     }else{
-        console.log(sidePanelControl.childNodes[1].childNodes);
+        //checks if other button is clicked;
         if(userSideInsertBox.childNodes[3].attributes.data_open){
             returnVar=false;
             if(userSideInsertBox.childNodes[3].attributes.data_open.value === "nickName"){
@@ -836,19 +845,12 @@ const sidePanelHandler = targetClass => {
             userSideInsertBox.childNodes[3].setAttribute("data_open", "mobile");
             sidePanelControl.childNodes[3].childNodes[1].textContent = "Cancel";
         }
-        // if(_userMobile){
-        //     document.querySelector("aside.userSidePanel > p:nth-Child(1) > #userMobile").value = userMobile =  _userMobile;
-        //     mobileBtn.textContent="Edit";
-        // }else{
-        //     mobileBtn.textContent="Add";
-        // }
-        // mobileActBtn.textContent = "Cancel";
     }
 
-    // mobileBtn.disabled = !mobileBtn.disabled;
     if(returnVar){
         document.querySelector("section.userSettings").classList.toggle("asideOpen");
     }
+
     return returnVar;
 }
 
@@ -917,11 +919,19 @@ const activePanel = () => {
     if(navNode.classList.contains("panelActive")){
         navNode.classList.toggle("panelActive");
         navNode.classList.toggle("panelInactive");
+        
+        navNode.childNodes[1].childNodes[0].disabled = true;
+        navNode.childNodes[3].childNodes[0].disabled = true;
+        
     }else{
         if(navNode.classList.contains("panelInactive")){
             navNode.classList.toggle("panelActive");
         }
         navNode.classList.toggle("panelInactive");
+        setTimeout(()=>{
+            navNode.childNodes[1].childNodes[0].disabled = false;
+            navNode.childNodes[3].childNodes[0].disabled = false;
+        }, 200)
     }
     
 }
