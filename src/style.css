@@ -86,6 +86,10 @@ nav .userPanel.panelActive {
     transform: translateY(4rem);
 }
 
+nav .userPanel.panelInactive > li button {
+    cursor: default;
+}
+
 nav .userPanel li {
     margin: .1rem 0;
     width: 8rem;
@@ -247,7 +251,7 @@ body .noteMenu {
 
 body .userSettings {
     padding: 1rem 1rem;
-    height: 35rem;
+    height: 30rem;
     width: 40rem;
     left: 50%;
     transition: transform .35s;
@@ -398,20 +402,8 @@ body section.userSettings.asideOpen {
     align-items: center;
 }
 
-.userSettings > p:nth-child(3) {
-    padding: 0 1rem;
-}
-
-.userSettings > p:nth-child(4) {
-    padding: 0 2rem;
-}
-
-.userSettings .closeBtn + p {
+.userSettings > .closeBtn + p {
     justify-content: flex-start;
-}
-
-.userSettings .closeBtn + p > button {
-    margin: 0 .5rem;
 }
 
 .userSettings > p label, input, aside label, aside input {
@@ -514,6 +506,7 @@ body section.userSettings.asideOpen {
 .userSettings > aside.userSidePanel > p:nth-child(2) {
     justify-content: flex-end;
 }
+
 
 .userSettings .saveProfileBtnCon {
     margin-top: auto;
