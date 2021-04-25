@@ -13,7 +13,7 @@ let user_DATABASE=[{
     email: "affafu@gmail.com",
     mobile: "null",
     pfp: "default",
-    nickname: null
+    nickname: "plop"
 },{
     username: "barrys",
     email: "barry@gmail.com",
@@ -203,7 +203,7 @@ const userLogInOut = (loggingIn = true) => {
         imgCon.appendChild(imgIn);
         userNavBtns.appendChild(imgCon);
 
-        user['nickname'] ? btn2.textContent = user['nickname'] : btn2.textContent = currentUser;
+        user['nickname'] ? panelBtnChange(user.nickname) : panelBtnChange(currentUser);
 
         user['pfp'] === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user['pfp']);
     }else{
@@ -514,7 +514,7 @@ const clicked = e => {
     let btnClass = e.target.classList[0];
     const parent = e.target.parentNode;
     let nodeClass;
-
+    console.log(btnClass);
     if(btnClass==="addBtn" 
     || btnClass==="editBtn" 
     || btnClass==="closeBtn" 
@@ -817,6 +817,7 @@ const sidePanelHandler = (targetClass = null) => {
     let returnVar = true;
     const sidePanelControl = document.querySelector(".userSettings > .sidePanelControl");
     const userSideInsertBox = document.querySelector(".userSidePanel > p:nth-child(1)");
+    const userSidePanelBtn = document.querySelector(".userSidePanel > .fd > .sidePanelBtn");
     const userSettings = document.querySelector("section.userSettings");
 
     if(!targetClass){
@@ -824,29 +825,9 @@ const sidePanelHandler = (targetClass = null) => {
     }
 
     if(userSettings.classList.contains("asideOpen") && !userSideInsertBox.parentNode.classList.contains("hiddenSection") && targetClass.replace("Btn","")===userSideInsertBox.childNodes[3].attributes.data_open.value){
-        if(userSideInsertBox.childNodes[3].attributes.data_open.value==="nickName"){
-            sidePanelControl.childNodes[1].childNodes[1].textContent = "Add";
-        }else{
-            sidePanelControl.childNodes[3].childNodes[1].textContent = "Add";
-        }
-        
-        userSideInsertBox.childNodes[1].innerText = "Insert Value:";
-        userSideInsertBox.childNodes[3].removeAttribute("data_open");
-        if(userSideInsertBox.childNodes[3].value !== ""){
-            userSideInsertBox.childNodes[3].value = "";
-            sideInput = "";
-        }
+        sidePanelInputReset(userSideInsertBox, sidePanelControl, userSidePanelBtn);
     }else{
-        //checks if other button is clicked;
-
-        if(userSideInsertBox.childNodes[3].attributes.data_open){
-            returnVar=false;
-            if(userSideInsertBox.childNodes[3].attributes.data_open.value === "nickName"){
-                sidePanelControl.childNodes[1].childNodes[1].textContent = "Add";
-            }else{
-                sidePanelControl.childNodes[3].childNodes[1].textContent = "Add";
-            }
-        }
+        returnVar = sidePanelInputReset(userSideInsertBox, sidePanelControl);
 
         if(targetClass==="nickNameBtn"){
             userSideInsertBox.childNodes[1].innerText = "New Nickname:";
@@ -859,10 +840,39 @@ const sidePanelHandler = (targetClass = null) => {
             sidePanelControl.childNodes[3].childNodes[1].textContent = "Cancel";
             userMobile ? userSideInsertBox.childNodes[3].value = sideInput = userMobile : "";
         }
+
+        sideInput ? userSidePanelBtn.textContent = "Edit" : (returnVar ? "" : userSidePanelBtn.textContent = "Add");
     }
 
     if(returnVar){
         document.querySelector("section.userSettings").classList.toggle("asideOpen");
+    }
+
+    return returnVar;
+}
+
+const sidePanelInputReset = (userSideNode, sidePanelNode, userSidePanelBtn=false) => {
+    let returnVar = true;
+
+    if(userSideNode.childNodes[3].attributes.data_open){
+        if(userSideNode.childNodes[3].attributes.data_open.value === "nickName"){
+            userNickName ? sidePanelNode.childNodes[1].childNodes[1].textContent = userNickName : sidePanelNode.childNodes[1].childNodes[1].textContent = "Add";
+        }else{
+            userMobile ? sidePanelNode.childNodes[3].childNodes[1].textContent = userMobile : sidePanelNode.childNodes[3].childNodes[1].textContent = "Add";
+        }
+
+        if(userSidePanelBtn){
+            userSidePanelBtn.textContent === "Add" ? "" : userSidePanelBtn.textContent = "Add";
+            userSideNode.childNodes[1].innerText = "Insert Value:";
+            userSideNode.childNodes[3].removeAttribute("data_open");
+        }else{
+            returnVar = userSidePanelBtn;
+        }
+
+        if(userSideNode.childNodes[3].value !== ""){
+            userSideNode.childNodes[3].value = "";
+            sideInput = "";
+        }
     }
 
     return returnVar;
@@ -940,11 +950,11 @@ const activePanel = () => {
     }else{
         if(navNode.classList.contains("panelInactive")){
             navNode.classList.toggle("panelActive");
-            setTimeout(()=>{
-                navNode.childNodes[1].childNodes[0].disabled = false;
-                navNode.childNodes[3].childNodes[0].disabled = false;
-            }, 200)
         }
+        setTimeout(()=>{
+            navNode.childNodes[1].childNodes[0].disabled = false;
+            navNode.childNodes[3].childNodes[0].disabled = false;
+        }, 200)
 
         navNode.classList.toggle("panelInactive");
     }
@@ -985,12 +995,15 @@ const saveProfile = () => {
     }
     currentFile=null;
 
+    
+    
     if(userNickName){
-        updateUserDBASE(currentUser,'nickname',userNickName);
-        // nickLabelChange(nickName);
-        // nickBtnChange(nickName);
+        panelBtnChange(userNickName);
+    }else{
+        panelBtnChange(currentUser);
     }
-
+    
+    updateUserDBASE(currentUser,'nickname',userNickName);
     updateUserDBASE(currentUser,'mobile',userMobile);
 
     closeBtnClicked(".userSettings");
@@ -999,15 +1012,29 @@ const saveProfile = () => {
 const userMobileNickHandler = () => {
     const sidePanelControl = document.querySelector("aside.userSidePanel > p:nth-child(1)");
 
-    if(sideInput){
-        if(sidePanelControl.childNodes[3].attributes.data_open.value==="nickName"){
+    if(sidePanelControl.childNodes[3].attributes.data_open.value==="nickName"){
+        if(sideInput){
             userNickName = sideInput;
         }else{
-            userMobile = sideInput;
+            if(userNickName){
+                userNickName = null;
+            }else{
+                alert("empty");
+            }
         }
     }else{
-        alert("empty");
+        if(sideInput){
+            userMobile = sideInput;
+        }else{
+            if(userMobile){
+                userMobile=null;
+            }else{
+                alert("empty");
+            }
+        }
     }
+
+    menuClicked(".userSidePanel");
 }
 
 const pfpUpload = e => {
@@ -1070,20 +1097,8 @@ const pfpNavChange = newPfP => {
     document.querySelector(".loggedInUL .pfpContainer .pfp").src=newPfP;
 }
 
-const nickClear = () => {
-    updateUserDBASE(currentUser, 'nickname', null);
-    userNickName=null;
-    panelBtnChange(currentUser);
-}
-
-const nickLabelChange = (nick="Add") => {
-    const userNickName = document.querySelector(".sidePanelControl > p:nth-child(1) > button");
-    
-    userNickName.textContent = nick;
-}
-
 const panelBtnChange = user => {
-    document.querySelector(".loginRegisterMenuBtn:nth-child(2) button").textContent = user;
+    document.querySelector(".loginRegisterMenuBtn:nth-child(2) > button").textContent = user;
 }
 
 const searchUserDBASE = (propName, propValue, opPropName=null, sndOpPropName=null) => {
