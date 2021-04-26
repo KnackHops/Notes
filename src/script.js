@@ -940,29 +940,32 @@ const activeNote = (fromEdit=false, isActive = false) => {
 const activePanel = () => {
     const navNode = document.querySelector("nav .userPanel");
 
+    document.querySelector("section.userSettings").classList.contains("hiddenSection") ? "" : closeBtnClicked(".userSettings");
+
     if(navNode.classList.contains("panelActive")){
         navNode.classList.toggle("panelActive");
         navNode.classList.toggle("panelInactive");
-        
-        navNode.childNodes[1].childNodes[0].disabled = true;
-        navNode.childNodes[3].childNodes[0].disabled = true;
+        userPanelBtn(true, [navNode.childNodes[1].childNodes[0], navNode.childNodes[3].childNodes[0]]);
         
     }else{
         if(navNode.classList.contains("panelInactive")){
             navNode.classList.toggle("panelActive");
+            setTimeout(()=>{
+                userPanelBtn(false, [navNode.childNodes[1].childNodes[0], navNode.childNodes[3].childNodes[0]]);
+            }, 200)
+        }else{
+            userPanelBtn(true, [navNode.childNodes[1].childNodes[0], navNode.childNodes[3].childNodes[0]]);
         }
-        setTimeout(()=>{
-            navNode.childNodes[1].childNodes[0].disabled = false;
-            navNode.childNodes[3].childNodes[0].disabled = false;
-        }, 200)
+        
 
         navNode.classList.toggle("panelInactive");
     }
     
 }
 
-const userSettingsLabelChange = (btnNode, label="Add") => {
-    btnNode.textContent = label;
+const userPanelBtn = (varBool, [btn1, btn2]) => {
+    btn1.disabled = varBool;
+    btn2.disabled = varBool;
 }
 
 const checkLoggedAccount = () => {
@@ -994,8 +997,6 @@ const saveProfile = () => {
         updateUserDBASE(currentUser,'pfp',currentFile);
     }
     currentFile=null;
-
-    
     
     if(userNickName){
         panelBtnChange(userNickName);
@@ -1159,10 +1160,12 @@ window.onload = () =>{
     //otherVar
     let init = true;
 
-    activePanel();
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,init);   
     });
+    
+    activePanel();
+
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
             titleInput = e.target.value;
