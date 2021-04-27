@@ -1,6 +1,7 @@
 const _ISLOGGEDKEY = "notesIsLogged";
 const _USERLOGGEDKEY = "notesUserLogged";
 const _DEFAULTPFP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAABeCAYAAAA336rmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADlSURBVHhe7dExAQAwDMCgCWj9y+1scORAAW9mL4YyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpg7H3AU/beRBUx2yaAAAAAElFTkSuQmCC";
+const _CHANGESETPROP = ["userPfpChk", 'userNickChk', 'userMobileChk'];
 
 let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
 {title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
@@ -33,13 +34,20 @@ let login_DATABASE=[{
 let titleInput, bodyInput;
 let userName, userPass, userEmail;
 let sideInput;
-let userMobile, userEditEmail, userNickName;
+let userMobile, userNickName, userEditEmail;
+let _userMobile, _userNickName;
 let editable = false;
 let saveLocalChk = false;
 let clickingCheck = false;
 let currentOpenID = null;
 let currentUser = null;
 let currentFile = null;
+let changedSettingsChk = 
+    {
+        userPfpChk: false,
+        userNickChk: false,
+        userMobileChk: false
+    }; 
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
@@ -62,28 +70,16 @@ const orderList = whichOrder => {
     })
 
     if(whichOrder==="ascendCreated"){
-        console.log(descendCreated(newDbase));
         nodeLoad(ascendCreated(newDbase));
     }else if(whichOrder==="descendCreated"){
-        console.log(ascendCreated(newDbase));
         nodeLoad(descendCreated(newDbase));
     }else if(whichOrder==="ascendEdited"){
-        console.log(ascendEdited(newDbase));
         nodeLoad(ascendEdited(newDbase));
     }else if(whichOrder==="descendEdited"){
-        console.log(descendEdited(newDbase));
         nodeLoad(descendEdited(newDbase));
     }else{
         nodeLoad();
     }
-    
-    // console.log(descendCreated(newDbase));
-    
-    // console.log(ascendCreated(newDbase));
-
-    // console.log(ascendEdited(newDbase));
-
-    // console.log(descendEdited(newDbase));
 }
 
 const ascendCreated = arrayDbase => {
@@ -514,7 +510,7 @@ const clicked = e => {
     let btnClass = e.target.classList[0];
     const parent = e.target.parentNode;
     let nodeClass;
-    console.log(btnClass);
+
     if(btnClass==="addBtn" 
     || btnClass==="editBtn" 
     || btnClass==="closeBtn" 
@@ -601,8 +597,6 @@ const menuClicked = (nodeClass, targetClass=null) => {
     let returnVar = true;
     nodeClass===".userSidePanel" ? "" : checkingOpenedFrames();
 
-    console.log(nodeClass, targetClass);
-
     if(nodeClass===".loginRegisterMenu"){
         loginRegisterMenuPanelHandler(nodeClass, targetClass);
     }else if (nodeClass===".noteMenu"){
@@ -651,9 +645,7 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             menuClicked(".userSidePanel");
         }
 
-        userEditEmail=null;
-        userNickName=null;
-        userMobile=null;
+        userEditEmail = userNickName = _userNickName = userMobile = _userMobile = null;
 
         [sidePanelControl.childNodes[1], sidePanelControl.childNodes[3], sidePanelControl.childNodes[5]].forEach((item, i)=>{
             if(i!==2){
@@ -665,6 +657,8 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
                 item.childNodes[1].textContent = "Nada";
             }
         })
+
+        saveProfileBtnChk(true);
     }
 
     clearInputs(nodeClass);
@@ -802,8 +796,8 @@ const userSettingsPanelHandler = () => {
             item.childNodes[1].addEventListener("click",clicked);
             item.childNodes[1].disabled=false;
             i === 0 ? 
-            (userObj.nickname ? item.childNodes[1].textContent = userNickName = userObj.nickname : "") : 
-            (emailNumObj.mobile ? item.childNodes[1].textContent = userMobile = emailNumObj.mobile : "" );
+            (userObj.nickname ? item.childNodes[1].textContent = userNickName = _userNickName = userObj.nickname : "") : 
+            (emailNumObj.mobile ? item.childNodes[1].textContent = userMobile = _userMobile = emailNumObj.mobile : "" );
         }else{
             item.childNodes[1].textContent = userEditEmail = emailNumObj.email;
         }
@@ -812,8 +806,6 @@ const userSettingsPanelHandler = () => {
 }
 
 const sidePanelHandler = (targetClass = null) => {
-    // const mobileActBtn = document.querySelector(".sidePanelControl > p:nth-child(1) > button");
-    // const mobileBtn = document.querySelector("aside.userSidePanel > p:nth-Child(2) > .mobileBtn");
     let returnVar = true;
     const sidePanelControl = document.querySelector(".userSettings > .sidePanelControl");
     const userSideInsertBox = document.querySelector(".userSidePanel > p:nth-child(1)");
@@ -866,6 +858,7 @@ const sidePanelInputReset = (userSideNode, sidePanelNode, userSidePanelBtn=false
             userSideNode.childNodes[1].innerText = "Insert Value:";
             userSideNode.childNodes[3].removeAttribute("data_open");
         }else{
+            //returnVar becomes false if sidePanel is already open
             returnVar = userSidePanelBtn;
         }
 
@@ -1010,31 +1003,79 @@ const saveProfile = () => {
     closeBtnClicked(".userSettings");
 }
 
+
+
+const saveProfileBtnChk = (chkDisable, currentChange=null) =>{
+    const saveProfileBtn = document.querySelector(".userSettings > .saveProfileBtnCon > .saveProfileBtn");
+    let chkToDisable=true;
+
+    if(saveProfileBtn.disabled !== chkDisable){
+        if(currentChange){
+            if(chkDisable){
+                _CHANGESETPROP.forEach(item=>{
+                    if(item!==currentChange){
+                        if(changedSettingsChk[item]===true){
+                            chkToDisable=false;
+                        }
+                    }else{
+                        changedSettingsChk[item]=true;
+                    }
+                })
+            }
+        }
+        if(chkToDisable){
+            saveProfileBtn.disabled = chkDisable;
+        }
+    }
+}
+
 const userMobileNickHandler = () => {
     const sidePanelControl = document.querySelector("aside.userSidePanel > p:nth-child(1)");
+    let chkChange=true, btnChk;
 
     if(sidePanelControl.childNodes[3].attributes.data_open.value==="nickName"){
         if(sideInput){
-            userNickName = sideInput;
+            if(sideInput !== _userNickName){
+                userNickName = sideInput;
+                btnChk = false;
+            }else{
+                if(userNickName!==_userNickName){
+                    userNickName=_userNickName;
+                }
+                btnChk = true;
+            }
         }else{
             if(userNickName){
                 userNickName = null;
+                btnChk=false;
             }else{
                 alert("empty");
+                chkChange=false;
             }
         }
     }else{
         if(sideInput){
-            userMobile = sideInput;
+            if(sideInput !== _userMobile){
+                userMobile = sideInput;
+                btnChk = false;
+            }else{
+                if(userMobile!==_userMobile){
+                    userMobile=_userMobile;
+                }
+                btnChk = true;
+            }
         }else{
             if(userMobile){
                 userMobile=null;
+                btnChk=false;
             }else{
                 alert("empty");
+                chkChange=false;
             }
         }
     }
 
+    chkChange ? saveProfileBtnChk(btnChk, "userPfpChk") : "";
     menuClicked(".userSidePanel");
 }
 
@@ -1092,6 +1133,23 @@ const pfpEditCheck = userPfpEditable => {
 
 const pfpChange = newPfP => {
     document.querySelector(".userSettings .pfpContainer .pfp").src=newPfP;
+    let chkToDisable;
+    user_DATABASE.forEach(user=>{
+        if(user.username===currentUser){
+            if(user.pfp!==newPfP){
+                if(user.pfp==="default" && newPfP===_DEFAULTPFP){
+                    chkToDisable = true;
+                }else{
+                    chkToDisable = false;
+                }
+            }else{
+                chkToDisable = true;
+            }
+        }
+    })
+
+    
+    saveProfileBtnChk(chkToDisable, 'userPfpChk');
 }
 
 const pfpNavChange = newPfP => {
