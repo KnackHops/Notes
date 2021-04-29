@@ -208,9 +208,7 @@ const userLogInOut = (loggingIn = true) => {
 
         imgCon.removeChild(imgIn);
         imgCon.parentNode.removeChild(imgCon);
-        
-        
-        checkingOpenedFrames();
+
         btn2.textContent = "Register";
         currentUser=null;
     }
@@ -462,7 +460,7 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
         li.addEventListener("click",clicked);
     }
 
-    li.classList.add("txtCen");
+    // li.classList.add("txtCen");
     ul.appendChild(li)
 }
 
@@ -579,7 +577,7 @@ const clicked = e => {
 }
 
 const checkingOpenedFrames = () => {
-    document.querySelectorAll("sections.activeSection").forEach(section=>{
+    document.querySelectorAll("section.activeSection").forEach(section=>{
             if(section.classList.contains("userEdit")){
                 closeBtnClicked("."+ section.classList[0], true);
             }else{
@@ -702,8 +700,9 @@ const noteMenuPanelHandler = nodeClass => {
             if(locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
                 locallySaveCheck.childNodes[1].innerText = "Save Locally: ";
                 locallySaveCheck.childNodes[3].classList.remove("hiddenSection");
-                locallySaveCheck.childNodes[3].disabled ? locallySaveCheck.childNodes[3].disabled = false : "";
             }
+            
+            locallySaveCheck.childNodes[3].disabled ? locallySaveCheck.childNodes[3].disabled = false : "";
         }else{
             if(!locallySaveCheck.classList.contains("hiddenSection")){
                 locallySaveCheck.classList.add("hiddenSection");
@@ -933,7 +932,8 @@ const activeNote = (fromEdit=false, isActive = false) => {
 const activePanel = () => {
     const navNode = document.querySelector("nav .userPanel");
 
-    document.querySelector("section.userSettings").classList.contains("hiddenSection") ? "" : closeBtnClicked(".userSettings");
+    // document.querySelector("section.userSettings").classList.contains("hiddenSection") ? "" : closeBtnClicked(".userSettings");
+    checkingOpenedFrames();
 
     if(navNode.classList.contains("panelActive")){
         navNode.classList.toggle("panelActive");
@@ -1294,6 +1294,10 @@ window.onload = () =>{
     userpfpInput.addEventListener("change", pfpUpload);
 
     selectOrder.selectedIndex = 0;
+
+    selectOrder.addEventListener("click", e=>{
+        checkingOpenedFrames();
+    })
 
     selectOrder.addEventListener("change",({target})=>{
         orderList(target.value);
