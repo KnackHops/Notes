@@ -445,6 +445,7 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
     if(id===null){
         li.classList.add("defaultNote");
         li.addEventListener("dblclick", clicked);
+        console.log("welp")
     }else{
         const pBody = document.createElement("p");
         if(userN!=="localUser"){
@@ -688,6 +689,7 @@ const loginRegisterMenuPanelHandler = (nodeClass, registerClass)=>{
 const noteMenuPanelHandler = nodeClass => {
     const delBtn = document.querySelector(".delBtn");
     const locallySaveCheck = document.querySelector(".extraInput .saveLocallyContainer");
+    const addBtn = document.querySelector(".addBtn");
 
     if(!currentOpenID){
         delBtn.classList.add("hiddenSection");
@@ -712,7 +714,6 @@ const noteMenuPanelHandler = nodeClass => {
     }else{
         let id = currentOpenID;
         let title, body, date;
-        const addBtn = document.querySelector(".addBtn");
 
         if(locallySaveCheck.classList.contains("hiddenSection")){
             locallySaveCheck.classList.remove("hiddenSection");
@@ -769,7 +770,7 @@ const noteMenuPanelHandler = nodeClass => {
             activeNote(false, true);
         }
 
-        document.querySelector(".delBtn").disabled=false;
+        delBtn.disabled=false;
         delBtn.classList.remove("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("userEdit");
     }
@@ -893,7 +894,7 @@ const activeNote = (fromEdit=false, isActive = false) => {
 
     document.querySelector(".noteMenu input").disabled = !isActive;
     document.querySelector(".noteMenu textarea").disabled = !isActive;
-    document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
+    // document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
 
     if(fromEdit){
         if(isActive && noteMenu.classList.contains("nonEditable")){
@@ -1224,10 +1225,21 @@ window.onload = () =>{
     
     activePanel();
 
+    const chkInput = (addBtn, fValue, sValue) => {
+        console.log(fValue, sValue);
+        if(fValue || sValue){
+            addBtn.disabled = false;
+        }else{
+            addBtn.disabled = true;
+        }
+    }
+
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
+            chkInput(addBtn, e.target.value, bodyInput);
             titleInput = e.target.value;
         }else if(e.target.classList.contains("bodyBox")){
+            chkInput(addBtn, e.target.value, titleInput);
             bodyInput = e.target.value;
         }else if(e.target.id === "usernameInput"){
             userName = e.target.value;
