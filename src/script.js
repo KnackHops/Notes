@@ -445,7 +445,6 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
     if(id===null){
         li.classList.add("defaultNote");
         li.addEventListener("dblclick", clicked);
-        console.log("welp")
     }else{
         const pBody = document.createElement("p");
         if(userN!=="localUser"){
@@ -475,8 +474,6 @@ const clearNotes = () => {
 
 const nodeLoad = (altDbase = null) => {
     clearNotes();
-
-    let lastID;
 
     if(altDbase){
         altDbase.forEach(item=>{
@@ -545,7 +542,7 @@ const clicked = e => {
         editNote();
     }else if(nodeClass==="userNote"){
         currentOpenID=parent.id;
-        menuClicked(".noteMenu",null,currentOpenID);
+        currentOpenID ? menuClicked(".noteMenu",null,currentOpenID) : "";
     }else if(nodeClass==="closeBtn"){
         if(parent.classList.contains("userEdit")){
             closeBtnClicked("."+ parent.classList[0], true);
@@ -568,11 +565,12 @@ const clicked = e => {
         activePanel();
     }else if(nodeClass==="saveProfileBtn"){
         saveProfile();
-    }else if(nodeClass==="clearNickname"){
-        console.log("clear nickname");
     }else if(nodeClass==="sidePanelBtn"){
         userMobileNickHandler();
     }else{
+        if(nodeClass===".noteMenu"){
+            currentOpenID = null;
+        }
         menuClicked(nodeClass,e.target.className);
     }
 }
@@ -884,7 +882,6 @@ const clearInputs = whichNode => {
         titleInput = "";
         bodyInput = "";
         editable = false;
-        currentOpenID=null;
     }
 }
 
@@ -997,6 +994,8 @@ const saveProfile = () => {
     }else{
         panelBtnChange(currentUser);
     }
+
+    _CHANGESETPROP.forEach(item => changedSettingsChk[item] ? changedSettingsChk[item] = false : "");
     
     updateUserDBASE(currentUser,'nickname',userNickName);
     updateUserDBASE(currentUser,'mobile',userMobile);
@@ -1012,17 +1011,19 @@ const saveProfileBtnChk = (chkDisable, currentChange=null) =>{
 
     if(saveProfileBtn.disabled !== chkDisable){
         if(currentChange){
-            if(chkDisable){
-                _CHANGESETPROP.forEach(item=>{
-                    if(item!==currentChange){
-                        if(changedSettingsChk[item]===true){
+            _CHANGESETPROP.forEach(item=>{
+                if(item!==currentChange){
+                    if(changedSettingsChk[item]===true){
+                        if(chkDisable){
+                            console.log(chkDisable);
                             chkToDisable=false;
                         }
-                    }else{
-                        changedSettingsChk[item]=true;
                     }
+                }else{
+                    changedSettingsChk[item] = !chkDisable;
+                    console.log(changedSettingsChk[item]);
+                }
                 })
-            }
         }
         if(chkToDisable){
             saveProfileBtn.disabled = chkDisable;
@@ -1034,49 +1035,46 @@ const userMobileNickHandler = () => {
     const sidePanelControl = document.querySelector("aside.userSidePanel > p:nth-child(1)");
     let chkChange=true, btnChk;
 
-    if(sidePanelControl.childNodes[3].attributes.data_open.value==="nickName"){
-        if(sideInput){
-            if(sideInput !== _userNickName){
-                userNickName = sideInput;
-                btnChk = false;
-            }else{
-                if(userNickName!==_userNickName){
-                    userNickName=_userNickName;
-                }
-                btnChk = true;
-            }
+    const open_DATA = sidePanelControl.childNodes[3].attributes.data_open.value;
+    let valueReturn, whichChange;
+
+    open_DATA === "nickName" ? valueReturn = userNickName : valueReturn = userMobile;
+
+    if(sideInput){
+        if((open_DATA === "nickName" && sideInput !== _userNickName) ||
+        (open_DATA === "mobile" && sideInput !== _userMobile)){
+            valueReturn = sideInput;
+            btnChk = false;
         }else{
-            if(userNickName){
-                userNickName = null;
-                btnChk=false;
-            }else{
-                alert("empty");
-                chkChange=false;
+            if(open_DATA === "nickName" && userNickName !== _userNickName){
+                valueReturn = _userNickName;
+            }else if(open_DATA === "mobile" && userMobile !== _userMobile){
+                valueReturn = _userMobile;
             }
+            btnChk = true;
         }
     }else{
-        if(sideInput){
-            if(sideInput !== _userMobile){
-                userMobile = sideInput;
-                btnChk = false;
+        if((open_DATA === "nickName" && userNickName) || (open_DATA === "mobile" && userMobile)){
+            let returnVar = false;
+            valueReturn = null;
+
+            if(open_DATA === "nickName"){
+                !_userNickName && userNickName ? returnVar = true : "";
             }else{
-                if(userMobile!==_userMobile){
-                    userMobile=_userMobile;
-                }
-                btnChk = true;
+                !_userMobile && userMobile ? returnVar = true : "";
             }
+            
+            btnChk = returnVar;
         }else{
-            if(userMobile){
-                userMobile=null;
-                btnChk=false;
-            }else{
-                alert("empty");
-                chkChange=false;
-            }
+            alert("empty");
+            chkChange=false;
         }
     }
 
-    chkChange ? saveProfileBtnChk(btnChk, "userPfpChk") : "";
+    open_DATA === "nickName" ? userNickName = valueReturn : userMobile = valueReturn;
+    open_DATA === "nickName" ? whichChange = "userNickChk" : whichChange = "userMobileChk"
+
+    chkChange ? saveProfileBtnChk(btnChk, whichChange) : "";
     menuClicked(".userSidePanel");
 }
 
@@ -1226,7 +1224,6 @@ window.onload = () =>{
     activePanel();
 
     const chkInput = (addBtn, fValue, sValue) => {
-        console.log(fValue, sValue);
         if(fValue || sValue){
             addBtn.disabled = false;
         }else{
