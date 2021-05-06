@@ -32,6 +32,7 @@ let login_DATABASE=[{
 }]
 
 let titleInput, bodyInput;
+let prevTitleInput, prevBodyInput;
 let userName, userPass, userEmail;
 let sideInput;
 let userMobile, userNickName, userEditEmail;
@@ -634,6 +635,7 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
                 saveLocalChk = false;
             }
         }
+        chkInput(document.querySelector(".extraInput.fd > .fd > .addBtn"));
         activeNote(false,false);
     }else if(nodeClass===".userSettings"){
         const sidePanelControl = document.querySelector(`${nodeClass} .sidePanelControl`);
@@ -757,8 +759,8 @@ const noteMenuPanelHandler = nodeClass => {
         }
 
         locallySaveCheck.childNodes[1].innerText = date;
-        document.querySelector(`${nodeClass} input`).value = title;
-        document.querySelector(`${nodeClass} textarea`).value = body;
+        document.querySelector(`${nodeClass} input`).value = prevTitleInput = title;
+        document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
 
         if(!editable){
             document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
@@ -1189,6 +1191,26 @@ const updateUserDBASE = (username, propName, propValue) => {
     return returnVar;
 }
 
+const chkInput = (addBtn, fValue=null, sValue=null) => {
+    if(fValue || sValue){
+            addBtn.disabled = false;
+    }else{
+            addBtn.disabled = true;
+    }
+}
+
+const chkInputNote = (val, whereFrom) => {
+    let s_val;
+    const editBtn = document.querySelector(".extraInput > .fd > .editBtn");
+    whereFrom === "title" ? s_val = bodyInput : s_val = titleInput;
+
+    if((whereFrom === "title" && (val !== prevTitleInput || s_val !== prevBodyInput)) || (whereFrom === "body" && (val !== prevBodyInput || s_val !== prevTitleInput))){
+        editBtn.disabled = false;
+    }else{
+        editBtn.disabled = true;
+    }
+}
+
 window.onload = () =>{
     const sections = document.querySelectorAll("body section");
     const selectOrder = document.querySelector(".mainArticle .orderListCon select");
@@ -1223,20 +1245,12 @@ window.onload = () =>{
     
     activePanel();
 
-    const chkInput = (addBtn, fValue, sValue) => {
-        if(fValue || sValue){
-            addBtn.disabled = false;
-        }else{
-            addBtn.disabled = true;
-        }
-    }
-
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
-            chkInput(addBtn, e.target.value, bodyInput);
+            currentOpenID ? chkInputNote(e.target.value, "title") : chkInput(addBtn, e.target.value, bodyInput);
             titleInput = e.target.value;
         }else if(e.target.classList.contains("bodyBox")){
-            chkInput(addBtn, e.target.value, titleInput);
+            currentOpenID ? chkInputNote(e.target.value, "body") : chkInput(addBtn, e.target.value, titleInput);
             bodyInput = e.target.value;
         }else if(e.target.id === "usernameInput"){
             userName = e.target.value;
@@ -1269,6 +1283,15 @@ window.onload = () =>{
         editable = e.target.checked;
         if(e.target.parentNode.parentNode.parentNode.classList.contains("userEdit")){
             activeNote(true,editable);
+            if(currentOpenID){
+                if(titleInput!==prevTitleInput){
+                    document.querySelector(".noteMenu > input.titleBox").value = titleInput = prevTitleInput;
+                }
+                if(bodyInput!==prevBodyInput){
+                    document.querySelector(".noteMenu > textarea.bodyBox").value = bodyInput = prevBodyInput;
+                }
+                document.querySelector(".extraInput > .fd > .editBtn").disabled = true;
+            }
         }
     }
 
