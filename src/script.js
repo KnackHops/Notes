@@ -485,7 +485,6 @@ const nodeLoad = (altDbase = null) => {
             _DATABASE.forEach(item=>{
                 if(currentUser===item.user){
                     createNote(item.title, item.body, item.id, item.user);
-                    lastID=item.id
                 }
             })
         }
@@ -493,7 +492,6 @@ const nodeLoad = (altDbase = null) => {
         if(local_DATABASE){
             local_DATABASE.forEach(item=>{
                 createNote(item.title, item.body, item.id, item.user);
-                lastID++;
             })
         }
     }
@@ -618,7 +616,8 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             document.querySelector("section .emailContainer input").disabled = true;
             initialize ? "" : document.querySelector(nodeClass).classList.toggle("registerRN");
         }
-        document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled=true);
+        document.querySelector(".loginRegisterMenu > p > .loginregisterFuncBtn").disabled = true;
+        document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled = true);
     }else if(nodeClass === ".noteMenu"){
         if(userEdit){
             const addBtn = document.querySelector(".editBtn");
@@ -1199,6 +1198,16 @@ const chkInput = (addBtn, fValue=null, sValue=null) => {
     }
 }
 
+const chkNoteInput = (value, value2, value3 = null, whichNodeFlow = null) => {
+    const loginregisterFuncBtn = document.querySelector(".loginRegisterMenu p .loginregisterFuncBtn");
+
+    if(whichNodeFlow){
+        value && value2 && value3 ? loginregisterFuncBtn.disabled = false : loginregisterFuncBtn.disabled = true;
+    }else{
+        value && value2 ? loginregisterFuncBtn.disabled = false : loginregisterFuncBtn.disabled = true;
+    }
+}
+
 const chkInputNote = (val, whereFrom) => {
     let s_val;
     const editBtn = document.querySelector(".extraInput > .fd > .editBtn");
@@ -1252,12 +1261,13 @@ window.onload = () =>{
         }else if(e.target.classList.contains("bodyBox")){
             currentOpenID ? chkInputNote(e.target.value, "body") : chkInput(addBtn, e.target.value, titleInput);
             bodyInput = e.target.value;
-        }else if(e.target.id === "usernameInput"){
-            userName = e.target.value;
-        }else if(e.target.id === "passwordInput"){
-            userPass = e.target.value;
+        }else if(e.target.id === "usernameInput" || e.target.id === "passwordInput"){
+            e.target.id === "usernameInput" ? userName = e.target.value : userPass = e.target.value;
+
+            document.querySelector(".loginRegisterMenu").classList.contains("registerRN") ? chkNoteInput(userName, userPass, userEmail, "register") : chkNoteInput(userName, userPass);
         }else if(e.target.id === "emailInput"){
             userEmail = e.target.value;
+            chkNoteInput(userName, userPass, userEmail, "register");
         }else if(e.target.id === "sidePanelInp"){
             sideInput = e.target.value;
             let printValue;
@@ -1307,11 +1317,16 @@ window.onload = () =>{
     [usernameInput, emailInput, passwordInput, titleBox, bodyBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
 
     window.addEventListener("keydown", e => {
-        if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
-            if(e.key==="Enter"){
+        if(e.key==="Enter"){
+            if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
                 loginregisterFuncBtn.click();
+            }else if(e.target === sidePanelBtn){
+                sidePanelBtn.click();
+            }else if(e.target === titleBox || e.target === bodyBox){
+                addBtn.click();
             }
         }
+        
     });
 
     //loginregister
