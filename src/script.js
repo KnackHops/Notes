@@ -49,6 +49,8 @@ let changedSettingsChk =
         userNickChk: false,
         userMobileChk: false
     }; 
+let clickedChk = false;
+
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
@@ -502,6 +504,11 @@ const nodeLoad = (altDbase = null) => {
 //clickedterminal
 const clicked = e => {
     e.preventDefault();
+
+    clickedChk = true;
+
+    setTimeout(()=> clickedChk = false, 100);
+
     let btnClass = e.target.classList[0];
     const parent = e.target.parentNode;
     let nodeClass;
@@ -592,6 +599,10 @@ const checkingOpenedFrames = () => {
 const menuClicked = (nodeClass, targetClass=null) => {
     let returnVar = true;
     nodeClass===".userSidePanel" ? "" : checkingOpenedFrames();
+
+    if(!document.querySelector("ul.userPanel").classList.contains("panelInactive")){
+        activePanel();
+    }
 
     if(nodeClass===".loginRegisterMenu"){
         loginRegisterMenuPanelHandler(nodeClass, targetClass);
@@ -776,7 +787,6 @@ const noteMenuPanelHandler = nodeClass => {
 }
 
 const userSettingsPanelHandler = () => {
-    activePanel();
     const sidePanelControl = document.querySelector(".sidePanelControl");
     const userObj = searchUserDBASE('username',currentUser,'nickname','pfp');
     const emailNumObj = searchUserDBASE('username', currentUser, 'email', 'mobile');
@@ -1226,6 +1236,7 @@ window.onload = () =>{
     const sectionCloseBtns = document.querySelectorAll("section .closeBtn");
     const logOutBtn = document.querySelector(".userPanel li .logOutBtn");
     //loginRegister
+    const loginRegisterMenu = document.querySelector(".loginRegisterMenu");
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
     const registerMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .registerBtn");
     const loginregisterFuncBtn = document.querySelector(".loginRegisterMenu p .loginregisterFuncBtn");
@@ -1233,14 +1244,18 @@ window.onload = () =>{
     const passwordInput = document.querySelector("#passwordInput");
     const emailInput = document.querySelector("#emailInput");
     //note
+    const noteMenu = document.querySelector(".noteMenu");
+
     const addBtn = document.querySelector(".addBtn");
     const delBtn = document.querySelector(".delBtn");
     const titleBox = document.querySelector(".noteMenu input");
     const bodyBox = document.querySelector(".noteMenu textarea");
     const chckBox = document.querySelector(".noteMenu .extraInput .checkEditContainer input");
     const saveLocallyCheck = document.querySelector(".noteMenu .extraInput .saveLocallyContainer input");
+
     //userSettings
-    const userSettings = document.querySelector(".userSettingsBtn");
+    const userSettings = document.querySelector(".userSettings");
+    const userSettingsBtn = document.querySelector(".userSettingsBtn");
     const userpfpInput = document.querySelector("#userpfpInput");
     const saveProfileBtn = document.querySelector(".saveProfileBtn");
     const sidePanelInp = document.querySelector("aside.userSidePanel > p:nth-Child(1) > #sidePanelInp");
@@ -1313,7 +1328,33 @@ window.onload = () =>{
         e.target.parentNode.classList.toggle("focusTT");
     }
 
-    [...sectionCloseBtns, logOutBtn, userSettings, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
+    const nodeCheck = (node, targetNode) => {
+        let returnVar = true;
+
+        if(node !== targetNode){
+            returnVar = itemScan(node.childNodes, targetNode);
+        }
+
+        return returnVar;
+    }
+
+    const itemScan = (nodeList, targetNode) => {
+        let returnVar = false;
+        nodeList.forEach(item=>{
+            if(!returnVar){
+                if(item !== targetNode){
+                    if(item.childNodes){
+                        returnVar = itemScan(item.childNodes, targetNode);
+                    }
+                }else{
+                    returnVar = true;
+            }}
+        })
+        
+        return returnVar;
+    }
+
+    [...sectionCloseBtns, logOutBtn, userSettingsBtn, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, bodyBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
 
     window.addEventListener("keydown", e => {
@@ -1328,6 +1369,19 @@ window.onload = () =>{
         }
         
     });
+
+    window.addEventListener("click",e => {
+        if(!clickedChk){
+            let chkWhichClicked = true;
+            
+            [noteMenu, loginRegisterMenu, userSettings].forEach(node => {
+                node.classList.contains("hiddenSection") ? "" : chkWhichClicked = nodeCheck(node, e.target);
+            })
+
+
+            chkWhichClicked ? "" : checkingOpenedFrames();
+        }
+    })
 
     //loginregister
     usernameInput.addEventListener("focus",focusedTT);
