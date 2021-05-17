@@ -43,7 +43,7 @@ header div h1 {
 
 nav {
     position: relative;
-    z-index: 5;
+    z-index: 7;
 }
 
 nav ul {
@@ -81,6 +81,7 @@ nav > .userPanel.panelInactive {
 }
 
 nav > .userPanel.panelActive {
+    z-index: 7;
     opacity: 1;
     right: 1rem;
     transform: translateY(4rem);
@@ -120,7 +121,21 @@ header ul li button:hover {
 
 /* body css */
 body .mainArticle {
+    z-index: 5;
     flex: 1;
+}
+
+body .backGroundPanel {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    background-color: rgba(0,0,0,.2);
+    z-index: 0;
+}
+
+.backGroundPanel.activeSection {
+    z-index: 999;
 }
 
 .pfpContainer {
@@ -282,7 +297,7 @@ section label, section textarea, section input {
 }
 
 .activeSection {
-    z-index: 7;
+    z-index: 999;
 }
 
 button.hiddenSection {
@@ -475,8 +490,7 @@ body section.userSettings.asideOpen {
     transition: all .2s;
     left: 50%;
     transform: translateX(5rem);
-    z-index: 1;
-    
+    z-index: 0;
     margin-top: 9.75rem;
     height: 10rem;
     width: 23.1rem;

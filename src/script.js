@@ -614,9 +614,22 @@ const menuClicked = (nodeClass, targetClass=null) => {
         returnVar = sidePanelHandler(targetClass);
     }
 
+    backgroundPanelHandler(nodeClass);
+
     if(returnVar){
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
+    }
+}
+
+// background panel handler
+const backgroundPanelHandler = (nodeClass, fromMenu = true) => {
+    const bgPanel = document.querySelector(".backGroundPanel");
+
+    if(nodeClass!==".userSidePanel"){
+        fromMenu ? bgPanel.classList.toggle("activeSection") : (bgPanel.classList.contains("activeSection") ? bgPanel.classList.toggle("activeSection") : "");
+        
+        bgPanel.classList.toggle("hiddenSection");
     }
 }
 
@@ -678,6 +691,7 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
     }
+    backgroundPanelHandler(nodeClass, false);
 }
 
 const loginRegisterMenuPanelHandler = (nodeClass, registerClass)=>{
@@ -1328,16 +1342,6 @@ window.onload = () =>{
         e.target.parentNode.classList.toggle("focusTT");
     }
 
-    const nodeCheck = (node, targetNode) => {
-        let returnVar = true;
-
-        if(node !== targetNode){
-            returnVar = itemScan(node.childNodes, targetNode);
-        }
-
-        return returnVar;
-    }
-
     const itemScan = (nodeList, targetNode) => {
         let returnVar = false;
         nodeList.forEach(item=>{
@@ -1375,9 +1379,10 @@ window.onload = () =>{
             let chkWhichClicked = true;
             
             [noteMenu, loginRegisterMenu, userSettings].forEach(node => {
-                node.classList.contains("hiddenSection") ? "" : chkWhichClicked = nodeCheck(node, e.target);
+                if(!node.classList.contains("hiddenSection")){
+                    e.target === document.querySelector(".backGroundPanel") ? chkWhichClicked = false : "";
+                }
             })
-
 
             chkWhichClicked ? "" : checkingOpenedFrames();
         }
