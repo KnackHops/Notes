@@ -843,6 +843,7 @@ const sidePanelHandler = (targetClass = null) => {
         sidePanelInputReset(userSideInsertBox, sidePanelControl, userSidePanelBtn);
     }else{
         returnVar = sidePanelInputReset(userSideInsertBox, sidePanelControl);
+        const sidePanelInp = document.querySelector(".userSidePanel > p > #sidePanelInp");
 
         if(targetClass==="nickNameBtn"){
             userSideInsertBox.childNodes[1].innerText = "New Nickname:";
@@ -857,6 +858,11 @@ const sidePanelHandler = (targetClass = null) => {
         }
 
         sideInput ? userSidePanelBtn.textContent = "Edit" : (returnVar ? "" : userSidePanelBtn.textContent = "Add");
+        
+        setTimeout(() => {
+            sidePanelInp.disabled = userSidePanelBtn.disabled = false;
+            sidePanelInp.focus();
+        }, 60);
     }
 
     if(returnVar){
@@ -868,6 +874,8 @@ const sidePanelHandler = (targetClass = null) => {
 
 const sidePanelInputReset = (userSideNode, sidePanelNode, userSidePanelBtn=false) => {
     let returnVar = true;
+    const sidePanelInp = document.querySelector(".userSidePanel > p > #sidePanelInp");
+    const sidePanelBtn = document.querySelector(".userSidePanel > p > .sidePanelBtn");
 
     if(userSideNode.childNodes[3].attributes.data_open){
         if(userSideNode.childNodes[3].attributes.data_open.value === "nickName"){
@@ -889,8 +897,12 @@ const sidePanelInputReset = (userSideNode, sidePanelNode, userSidePanelBtn=false
             userSideNode.childNodes[3].value = "";
             sideInput = "";
         }
+        
+        setTimeout(() => {
+            sidePanelInp.blur();
+            sidePanelInp.disabled = sidePanelBtn.disabled = true;
+        }, 60);
     }
-
     return returnVar;
 }
 
@@ -1301,19 +1313,11 @@ window.onload = () =>{
             sideInput = e.target.value;
             let printValue;
 
-            if(!sideInput){
-                if(sidePanelInp.attributes.data_open.value==="nickName" && userNickName){
-                    printValue = "Clear";
-                }else if(sidePanelInp.attributes.data_open.value==="mobile" && userMobile){
-                    printValue = "Clear";
-                }
-            }else{
-                if(sidePanelInp.attributes.data_open.value==="nickName" && userNickName){
-                    printValue = "Edit";
-                }else if(sidePanelInp.attributes.data_open.value==="mobile" && userMobile){
-                    printValue = "Edit";
-                }
+            if((sidePanelInp.attributes.data_open.value === "nickName" && userNickName) || 
+            (sidePanelInp.attributes.data_open.value === "mobile" && userMobile)){
+                sideInput ? printValue = "Edit" : printValue = "Clear";
             }
+
             printValue ? sidePanelBtn.textContent = printValue : "";
         }
     }
@@ -1365,7 +1369,7 @@ window.onload = () =>{
         if(e.key==="Enter"){
             if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
                 loginregisterFuncBtn.click();
-            }else if(e.target === sidePanelBtn){
+            }else if(e.target === sidePanelInp){
                 sidePanelBtn.click();
             }else if(e.target === titleBox || e.target === bodyBox){
                 addBtn.click();
