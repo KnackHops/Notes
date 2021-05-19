@@ -12,7 +12,7 @@ let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editab
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
-    mobile: "null",
+    mobile: null,
     pfp: "default",
     nickname: "plop"
 },{
@@ -860,7 +860,7 @@ const sidePanelHandler = (targetClass = null) => {
         sideInput ? userSidePanelBtn.textContent = "Edit" : (returnVar ? "" : userSidePanelBtn.textContent = "Add");
         
         setTimeout(() => {
-            sidePanelInp.disabled = userSidePanelBtn.disabled = false;
+            sidePanelInp.disabled = false;
             sidePanelInp.focus();
         }, 60);
     }
@@ -1316,6 +1316,13 @@ window.onload = () =>{
             if((sidePanelInp.attributes.data_open.value === "nickName" && userNickName) || 
             (sidePanelInp.attributes.data_open.value === "mobile" && userMobile)){
                 sideInput ? printValue = "Edit" : printValue = "Clear";
+                if(sidePanelInp.attributes.data_open.value === "nickName"){
+                    userNickName === sideInput ? sidePanelBtn.disabled = true : sidePanelBtn.disabled = false;
+                }else{
+                    userMobile === sideInput ? sidePanelBtn.disabled = true : sidePanelBtn.disabled = false;
+                }
+            }else{
+                sideInput ? sidePanelBtn.disabled = false : sidePanelBtn.disabled = true;
             }
 
             printValue ? sidePanelBtn.textContent = printValue : "";
