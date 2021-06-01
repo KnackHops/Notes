@@ -1256,6 +1256,41 @@ const chkInputNote = (val, whereFrom) => {
     }
 }
 
+const localStorageInit = () => {
+
+    let dbPromise = indexedDB.open("test", 1, upgradeReq => {
+        console.log(upgradeReq);
+    });
+    let dbase;
+
+    // dbPromise.onupgradeneeded = e => {
+
+    //     let dbase = e.target.result;
+
+    //     switch (dbase.version) {
+    //         case 1:
+    //             if(!dbase.objectStoreNames.contains("testOS")){
+    //                 dbase.createObjectStore("testOS");
+    //             }
+    //         case 2:
+    //             if(!dbase.objectStoreNames.contains("testOS2")){
+    //                 dbase.createObjectStore("testOS2")
+    //             }
+    //     }
+
+    //     console.log(dbase, dbase.objectStoreNames);
+    // }
+    
+    // dbPromise.onsuccess = e => {
+    //     console.log("database open");
+    //     dbase = e.target.result;
+    // }
+
+    // dbPromise.onerror = e => {
+    //     console.log("database error opening", e.target.result);
+    // }
+}
+
 window.onload = () =>{
     const sections = document.querySelectorAll("body section");
     const selectOrder = document.querySelector(".mainArticle .orderListCon select");
