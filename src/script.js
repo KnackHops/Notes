@@ -2,6 +2,8 @@ const _ISLOGGEDKEY = "notesIsLogged";
 const _USERLOGGEDKEY = "notesUserLogged";
 const _DEFAULTPFP = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAABeCAYAAAA336rmAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADlSURBVHhe7dExAQAwDMCgCWj9y+1scORAAW9mL4YyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpA1IGpAxIGZAyIGVAyoCUASkDUgakDEgZkDIgZUDKgJQBKQNSBqQMSBmQMiBlQMqAlAEpg7H3AU/beRBUx2yaAAAAAElFTkSuQmCC";
 const _CHANGESETPROP = ["userPfpChk", 'userNickChk', 'userMobileChk'];
+const _INDEXEDDBNAME = "localUserNoteDB";
+const _INDEXEDSTORENAME = ["localNotesOS", "noteImageOS"];
 
 let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
 {title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
@@ -50,7 +52,7 @@ let changedSettingsChk =
         userMobileChk: false
     }; 
 let clickedChk = false;
-
+let dbaseLoadChk = [false, false];
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
@@ -346,15 +348,13 @@ const saveNote = () => {
         id=0;
     }
 
-    let newUser = {title: titleInput, body: bodyInput, editable, id, user, date: newDate};
-
-    if(currentUser && !saveLocalChk){
-        _DATABASE.push(newUser);
+    if(user === "localUser"){
+        local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
+        terminal();
     }else{
-        local_DATABASE.push(newUser);
+        _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
+        terminal();
     }
-
-    terminal();
 }
 
 const editNote = () => {
@@ -490,7 +490,6 @@ const nodeLoad = (altDbase = null) => {
                 }
             })
         }
-
         if(local_DATABASE){
             local_DATABASE.forEach(item=>{
                 createNote(item.title, item.body, item.id, item.user);
@@ -1256,39 +1255,65 @@ const chkInputNote = (val, whereFrom) => {
     }
 }
 
-const localStorageInit = () => {
+const checkIndexeDB = () => {
+    let returnVar = false;
+    if('indexedDB' in window){
+        returnVar =  true;
+    }
 
-    let dbPromise = indexedDB.open("test", 1, upgradeReq => {
-        console.log(upgradeReq);
-    });
-    let dbase;
+    return returnVar;
+}
 
-    // dbPromise.onupgradeneeded = e => {
+const indexedDBInit = dbase => {
+    switch (dbase.version) {
+        case 1:
+            !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[0]) ? dbase.createObjectStore(_INDEXEDSTORENAME[0], {keyPath: 'id', autoIncrement: true}) : "";
+            !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[1]) ? dbase.createObjectStore(_INDEXEDSTORENAME[1], {keyPath: 'image_id', autoIncrement: true}) : "";
+    }
+}
 
-    //     let dbase = e.target.result;
+const indexedDBTerminal = () => {
+    return new Promise((resolve, reject) => {
+        let dbReq = indexedDB.open(_INDEXEDDBNAME, 1);
 
-    //     switch (dbase.version) {
-    //         case 1:
-    //             if(!dbase.objectStoreNames.contains("testOS")){
-    //                 dbase.createObjectStore("testOS");
-    //             }
-    //         case 2:
-    //             if(!dbase.objectStoreNames.contains("testOS2")){
-    //                 dbase.createObjectStore("testOS2")
-    //             }
-    //     }
-
-    //     console.log(dbase, dbase.objectStoreNames);
-    // }
+        dbReq.onupgradeneeded = e => {
+            indexedDBInit(e.target.result);
+        }
     
-    // dbPromise.onsuccess = e => {
-    //     console.log("database open");
-    //     dbase = e.target.result;
-    // }
+        dbReq.onsuccess = e => {
+            console.log("database opened successfully");
+            let dbase = e.target.result;
+            resolve(dbase);
+        }
+    
+        dbReq.onerror = e => {
+            console.log("database error opening", e.target.result);
+            reject(null);
+        }
+})}
 
-    // dbPromise.onerror = e => {
-    //     console.log("database error opening", e.target.result);
-    // }
+const indexedDBAddNoteOS = (obj, osName) => {
+    indexedDBTerminal().then(dbase=>{
+        if(dbase){
+            let tx = dbase.transaction(osName, 'readwrite');
+            let store = dbase.objectStore(osName);
+
+            tx.onsuccess = e => {
+                console.log("Added successfully!");
+            }
+            
+            store.add(obj);
+
+        }   
+    })
+}
+
+const indexedDBDel = () => {
+    delete database
+
+    var request = indexedDB.deleteDatabase(_INDEXEDDBNAME);
+
+    request.onsuccess = e => {console.log("there ya go")};
 }
 
 window.onload = () =>{
