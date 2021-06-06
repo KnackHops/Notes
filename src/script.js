@@ -349,7 +349,8 @@ const saveNote = () => {
     }
 
     if(user === "localUser"){
-        local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
+        // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
+        indexedDBAddNoteOS({title: titleInput, body: bodyInput, editable, user, date: newDate}, _INDEXEDSTORENAME[0]);
         terminal();
     }else{
         _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
@@ -482,22 +483,31 @@ const nodeLoad = (altDbase = null) => {
         altDbase.forEach(item=>{
             createNote(item.title, item.body, item.id, item.user);
         })
+        createNote();
     }else{
-        if(_DATABASE){
-            _DATABASE.forEach(item=>{
-                if(currentUser===item.user){
-                    createNote(item.title, item.body, item.id, item.user);
-                }
-            })
-        }
-        if(local_DATABASE){
-            local_DATABASE.forEach(item=>{
-                createNote(item.title, item.body, item.id, item.user);
-            })
-        }
-    }
+        let mainDBPromise = new Promise((resolve,reject)=>{
+            if(_DATABASE){
+                _DATABASE.forEach(item=>{
+                    if(currentUser===item.user){
+                        createNote(item.title, item.body, item.id, item.user);
+                    }
+                })
+                resolve("done");
+            }
+        })
+        
+        // if(local_DATABASE){
+        //     local_DATABASE.forEach(item=>{
+        //         createNote(item.title, item.body, item.id, item.user);
+        //     })
+        // }
 
-    createNote();
+        Promise.all([mainDBPromise, indexedDBGetAllNoteOS(_INDEXEDSTORENAME[0])]).then(resp=>{
+            console.log(resp[0], resp[1]);
+        }).finally(e=>{
+            createNote();
+        })
+    }
 }
 
 //clickedterminal
@@ -1293,18 +1303,53 @@ const indexedDBTerminal = () => {
 })}
 
 const indexedDBAddNoteOS = (obj, osName) => {
-    indexedDBTerminal().then(dbase=>{
-        if(dbase){
-            let tx = dbase.transaction(osName, 'readwrite');
-            let store = dbase.objectStore(osName);
-
-            tx.onsuccess = e => {
-                console.log("Added successfully!");
+    return addPromise = new Promise((resolve, reject) => {
+        indexedDBTerminal().then(dbase=>{
+            if(dbase){
+                let tx = dbase.transaction(osName, 'readwrite');
+                let store = tx.objectStore(osName);
+    
+                tx.oncomplete = e => {
+                    resolve(true);
+                }
+                
+                tx.onerror = e => {
+                    reject(false);
+                }
+    
+                store.add(obj);
+            }else{
+                reject(false);
             }
-            
-            store.add(obj);
+        })
+    })
+}
 
-        }   
+const indexedDBGetAllNoteOS = osName => {
+    return getAllPromise = new Promise((resolve, reject) => {
+        indexedDBTerminal().then(dbase=>{
+            let x = 0;
+            let req = dbase.transaction(osName, 'readonly').objectStore(osName).openCursor();
+
+            req.onsuccess = e => {
+                let cursor = e.target.result;
+                if(cursor){
+                    createNote(cursor.value.title, cursor.value.body, cursor.value.id, cursor.value.user);
+                    x++;
+                    cursor.continue();
+                }else{
+                    if(x){
+                        resolve('done');
+                    }else{
+                        resolve('none');
+                    }
+                }
+            }
+
+            req.onerror = e => {
+                reject(false);
+            }
+        })
     })
 }
 
@@ -1479,6 +1524,9 @@ window.onload = () =>{
     selectOrder.addEventListener("change",({target})=>{
         orderList(target.value);
     })
+
+
+    indexedDBTerminal();
 
     if(!checkLoggedAccount()){
         nodeLoad();
