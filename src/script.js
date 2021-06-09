@@ -350,8 +350,7 @@ const saveNote = () => {
 
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
-        checkIndexeDB() ? indexedDBAddNoteOS(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, user, date: newDate, lastUpdated: null}): "";
-        terminal();
+        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
     }else{
         _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate, lastUpdated: null});
         terminal();
@@ -376,15 +375,14 @@ const editNote = () => {
             })
         }else{
             id = Number(currentOpenID.replace("localNote",""));
-            
-            indexedDBGetNoteOS(_INDEXEDSTORENAME[0], id).then(data=>{
+            indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
                 if(data){
                     data = data.target.result;
                     let oldUpdatedDate = data.lastUpdated;
                     [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
                     if(data.lastUpdated){
                         if(data.lastUpdated !== oldUpdatedDate){
-                            indexedDBEditNoteOS(_INDEXEDSTORENAME[0], data).then(terminal(true));
+                            indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(terminal(true));
                         }
                     }
                 }
@@ -416,24 +414,25 @@ const deleteNote = () => {
     let id = currentOpenID;
 
     closeBtnClicked(".noteMenu",true);
-    
-    if(id.indexOf("note")==0){
-        id = id.replace("note","");
-        _DATABASE = _DATABASE.filter(item=>{
-            if(currentUser===item.user){
-                if(item.id!==Number(id)){
+    new Promise((resolve, reject) => {
+        if(id.indexOf("note")==0){
+            id = id.replace("note","");
+            _DATABASE = _DATABASE.filter(item=>{
+                if(currentUser===item.user){
+                    if(item.id!==Number(id)){
+                        return item;
+                    }
+                }else {
                     return item;
                 }
-            }else {
-                return item;
-            }
-        });
-    }else{
-        id = id.replace("localNote","");
-        local_DATABASE = local_DATABASE.filter(item=>item.id!==Number(id));
-    }
-
-    nodeLoad();
+            });
+            resolve(true);
+        }else{
+            id = id.replace("localNote","");
+            // local_DATABASE = local_DATABASE.filter(item=>item.id!==Number(id));
+            indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del").finally(resolve(true));
+        }
+    }).then(nodeLoad())
 }
 
 const createNote = (title=null, body=null, id=null, userN=null) => {
@@ -503,15 +502,9 @@ const nodeLoad = (altDbase = null) => {
                 resolve("done");
             }
         })
-        
-        // if(local_DATABASE){
-        //     local_DATABASE.forEach(item=>{
-        //         createNote(item.title, item.body, item.id, item.user);
-        //     })
-        // }
 
-        Promise.all([mainDBPromise, indexedDBGetAllNoteOS(_INDEXEDSTORENAME[0])]).then(resp=>{
-            console.log(resp[0], resp[1]);
+        Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).then(resp=>{
+            console.log(resp[0].value, resp[1].value);
         }).finally(e=>{
             createNote();
         })
@@ -771,7 +764,7 @@ const noteMenuPanelHandler = nodeClass => {
                 })
             }else{
                 id = Number(id.replace("localNote",""));
-                indexedDBGetNoteOS(_INDEXEDSTORENAME[0], id).then(data => {
+                indexedDBGetData(_INDEXEDSTORENAME[0] ,id).then(data => {
                     if(data){
                         resolve(data.target.result);
                     }else{
@@ -1278,11 +1271,8 @@ const chkInputNote = (val, whereFrom) => {
     }
 }
 
-const checkIndexeDB = () => {
-    let returnVar = false;
-    if('indexedDB' in window){
-        returnVar =  true;
-    }
+const checkIndexedDB = () => {
+    let returnVar = 'indexedDB' in window;
 
     return returnVar;
 }
@@ -1295,78 +1285,74 @@ const indexedDBInit = dbase => {
     }
 }
 
-const indexedDBTerminal = () => {
+const indexedDBGetDB = () => {
     return new Promise((resolve, reject) => {
-        let dbReq = indexedDB.open(_INDEXEDDBNAME, 1);
+        if(checkIndexedDB()){
+            let dbReq = indexedDB.open(_INDEXEDDBNAME, 1);
 
-        dbReq.onupgradeneeded = e => {
-            indexedDBInit(e.target.result);
-        }
+            dbReq.onupgradeneeded = e => {
+                indexedDBInit(e.target.result);
+            }
     
-        dbReq.onsuccess = e => {
-            console.log("database opened successfully");
-            let dbase = e.target.result;
-            resolve(dbase);
-        }
+            dbReq.onsuccess = e => {
+                console.log("database opened successfully");
+                let dbase = e.target.result;
+                resolve(dbase);
+            }
     
-        dbReq.onerror = e => {
-            console.log("database error opening", e.target.result);
-            reject(null);
+            dbReq.onerror = e => {
+                console.log("database error opening", e.target.result);
+                reject(null);
+            }
+        }else{
+            console.error('indexedDB Not supported!');
+            reject(false);
         }
 })}
 
-const indexedDBAddNoteOS = (osName, obj) => {
-    return addPromise = new Promise((resolve, reject) => {
-        indexedDBTerminal().then(dbase => {
+const indexedDBTerminal = (oSName ,item, transactionType) => {
+    return new Promise((resolve, reject) => {
+        indexedDBGetDB().then(dbase => {
             if(dbase){
-                let tx = dbase.transaction(osName, 'readwrite');
-                let store = tx.objectStore(osName);
+                let tx = dbase.transaction(oSName, 'readwrite');
+                let store = tx.objectStore(oSName);
     
-                tx.oncomplete = e => {
-                    resolve(true);
-                }
-                
-                tx.onerror = e => {
-                    reject(false);
-                }
-    
-                store.add(obj);
-            }else{
-                reject(false);
-            }
-        })
-    })
-}
-
-const indexedDBEditNoteOS = (osName, noteUpdateObj) => {
-    return editPromise = new Promise((resolve, reject) => {
-        indexedDBTerminal().then(dbase => {
-            if(dbase){
-                let tx = dbase.transaction(osName, 'readwrite');
-                let store = tx.objectStore(osName);
-
                 tx.oncomplete = () => {
+                    console.log("hey");
                     resolve(true);
                 }
-
+    
                 tx.onerror = () => {
+                    
+                    console.log("nop");
                     reject(false);
                 }
-                
-                
-                store.put(noteUpdateObj);
+    
+                switch(transactionType) {
+                    case 'add':
+                        store.add(item);
+                        break;
+                    case 'edit':
+                        store.put(item);
+                        break;
+                    case 'del':
+                        store.delete(item);
+                        break;
+                }
             }else{
                 reject(false);
             }
-        })
+        }).catch(()=>{
+            reject(false);
+        });
     })
 }
 
-const indexedDBGetAllNoteOS = osName => {
-    return getAllPromise = new Promise((resolve, reject) => {
-        indexedDBTerminal().then(dbase=>{
+const indexedDBGetAllNoteOS = () => {
+    return new Promise((resolve, reject) => {
+        indexedDBGetDB().then(dbase=>{
             let x = 0;
-            let req = dbase.transaction(osName, 'readonly').objectStore(osName).openCursor();
+            let req = dbase.transaction(_INDEXEDSTORENAME[0], 'readonly').objectStore(_INDEXEDSTORENAME[0]).openCursor();
 
             req.onsuccess = e => {
                 let cursor = e.target.result;
@@ -1386,15 +1372,29 @@ const indexedDBGetAllNoteOS = osName => {
             req.onerror = e => {
                 reject(false);
             }
-        })
+        }).catch(()=>{
+            reject(false);
+        });
     })
 }
 
-const indexedDBGetNoteOS = (osName, id) => {
-    return getPromise = new Promise((resolve, reject) => {
-        indexedDBTerminal().then(dbase => {
+const indexedDBAlternateGetAll = () => {
+    indexedDBGetDB().then(dbase => {
+        let req = dbase.transaction(_INDEXEDSTORENAME[0], 'readonly').objectStore(_INDEXEDSTORENAME[0]).getAll();
+
+        req.onsuccess = e => {
+            console.log(e.target.result, "ll");
+        }
+    }).catch(()=>{
+        reject(false);
+    });
+}
+
+const indexedDBGetData = (oSName, id) => {
+    return new Promise((resolve, reject) => {
+        indexedDBGetDB().then(dbase => {
             if(dbase){
-                let req = dbase.transaction(osName, "readonly").objectStore(osName).get(id);
+                let req = dbase.transaction(oSName, "readonly").objectStore(oSName).get(id);
 
                 req.onsuccess = data => {
                     resolve(data);
@@ -1404,12 +1404,14 @@ const indexedDBGetNoteOS = (osName, id) => {
                     reject(false);
                 }
             }
-        })
+        }).catch(()=>{
+            reject(false);
+        });
     })
 }
 
 const indexedDBDel = () => {
-    delete database
+    // delete database
 
     var request = indexedDB.deleteDatabase(_INDEXEDDBNAME);
 
@@ -1580,7 +1582,7 @@ window.onload = () =>{
         orderList(target.value);
     })
 
-    checkIndexeDB() ? indexedDBTerminal() : "";
+    indexedDBGetDB();
 
     if(!checkLoggedAccount()){
         nodeLoad();
