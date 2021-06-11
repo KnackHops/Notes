@@ -156,23 +156,31 @@ const dateNowGet = () => {
 }
 
 const logInUserValidate = () => {
-    let returnVar = null;
+    return new Promise((resolve, reject) => {
+        let returnVar = null;
 
-    if(!userName||!userPass){
-        alert("Please fill out area");
-    }else{
-        login_DATABASE.forEach(user=>{
-            if(user.username === userName.toLowerCase()){
-                if(user.password === userPass){
-                    returnVar = user.username;
+        if(!userName||!userPass){
+            alert("Please fill out area");
+        }else{
+            login_DATABASE.forEach(user=>{
+                if(user.username === userName.toLowerCase()){
+                    if(user.password === userPass){
+                        user_DATABASE.forEach(userDbase=>{
+                            if(userDbase.username === user.username){
+                                resolve({username: userDbase.username, pfp: userDbase.pfp, nickname: userDbase.nickname});
+                            }
+                        })
+                        returnVar = true;
+                    }
                 }
+            })
+
+            if(!returnVar){
+                reject(returnVar);
+                alert("Invalid username or password");
             }
-        })
-        if(!returnVar){
-            alert("Invalid username or password");
         }
-    }
-    return returnVar;
+    })
 }
 
 const userLogInOut = (loggingIn = true) => {
@@ -300,15 +308,26 @@ const registerUser = () => {
 
 const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
-        currentUser = logInUserValidate();
-        if(currentUser){
-            accountLogged(true);
-            userLogInOut();
-            closeBtnClicked(".loginRegisterMenu");
-        }else{
-            currentUser=null;
-            clearInputs(".loginRegisterMenu")
-        }
+        // currentUser = logInUserValidate();
+        // if(currentUser){
+        //     accountLogged(true);
+        //     userLogInOut();
+        //     closeBtnClicked(".loginRegisterMenu");
+        // }else{
+        //     currentUser=null;
+        //     clearInputs(".loginRegisterMenu")
+        // }
+
+        logInUserValidate().then(userResp => {
+            currentUser = userResp.nickname;
+            indexedDBTerminal(_INDEXEDSTORENAME[1], userResp, "add").finally(()=>{
+                userLogInOut();
+                closeBtnClicked(".loginRegisterMenu");
+            })
+        }).catch(errResp => {
+            currentUser = errResp;
+            clearInputs(".loginRegisterMenu");
+        });
     }else{
         if(registerUserValidate()){
             registerUser();
@@ -1281,7 +1300,7 @@ const indexedDBInit = dbase => {
     switch (dbase.version) {
         case 1:
             !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[0]) ? dbase.createObjectStore(_INDEXEDSTORENAME[0], {keyPath: 'id', autoIncrement: true}) : "";
-            !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[1]) ? dbase.createObjectStore(_INDEXEDSTORENAME[1], {keyPath: 'image_id', autoIncrement: true}) : "";
+            !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[1]) ? dbase.createObjectStore(_INDEXEDSTORENAME[1], {keyPath: 'username'}) : "";
     }
 }
 
@@ -1378,9 +1397,9 @@ const indexedDBGetAllNoteOS = () => {
     })
 }
 
-const indexedDBAlternateGetAll = () => {
+const indexedDBAlternateGetAll = oSName => {
     indexedDBGetDB().then(dbase => {
-        let req = dbase.transaction(_INDEXEDSTORENAME[0], 'readonly').objectStore(_INDEXEDSTORENAME[0]).getAll();
+        let req = dbase.transaction(oSName, 'readonly').objectStore(oSName).getAll();
 
         req.onsuccess = e => {
             console.log(e.target.result, "ll");
