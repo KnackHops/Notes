@@ -33,6 +33,18 @@ let login_DATABASE=[{
     password: "barryPass",
 }]
 
+let userProfileChange_DATABASE=[{
+    username: "affafu",
+    pfpLast: {month: 12, day: 5, year: 2020},
+    nickLast: {month: 12, day: 5, year: 2020}
+},
+{
+    username: "barrys",
+    pfpLast: {month: 1, day: 8, year: 2021},
+    nickLast: {month: 1, day: 8, year: 2021}
+}
+]
+
 let titleInput, bodyInput;
 let prevTitleInput, prevBodyInput;
 let userName, userPass, userEmail;
@@ -157,29 +169,41 @@ const dateNowGet = () => {
 
 const logInUserValidate = () => {
     return new Promise((resolve, reject) => {
-        let returnVar = null;
-
         if(!userName||!userPass){
             alert("Please fill out area");
+            reject(false);
         }else{
-            login_DATABASE.forEach(user=>{
-                if(user.username === userName.toLowerCase()){
-                    if(user.password === userPass){
-                        user_DATABASE.forEach(userDbase=>{
-                            if(userDbase.username === user.username){
-                                resolve({username: userDbase.username, pfp: userDbase.pfp, nickname: userDbase.nickname});
-                            }
-                        })
-                        returnVar = true;
-                    }
-                }
-            })
+            //fetching login data from backend
+            new Promise((resolve, reject) => {
+                let returnVar = null;
 
-            if(!returnVar){
-                reject(returnVar);
-                alert("Invalid username or password");
-            }
+                login_DATABASE.forEach(user=>{
+                    if(user.username === userName.toLowerCase()){
+                        if(user.password === userPass){
+                            resolve(user.username);
+                            returnVar = true;
+                        }
+                    }
+                })
+
+                if(!returnVar){
+                    reject(returnVar);
+                    alert("Invalid username or password");
+                }
+            }).then(username=>{
+                //fetch user data for pfp and nickname
+            }).catch(err=>{
+                reject(false);
+            })
         }
+    })
+}
+
+const userCache = username => {
+    return new Promise((resolve, reject) => {
+        indexedDBGetData(_INDEXEDSTORENAME[1], username)
+        .then(data=>resolve(data))
+        .catch(()=>reject(false));
     })
 }
 
@@ -303,6 +327,13 @@ const registerUser = () => {
         username: userName.toLowerCase(),
         password: userPass
     })
+
+    userProfileChange_DATABASE.push({
+        username: userName.toLowerCase(),
+        pfpLast: dateNowGet(),
+        nickLast: dateNowGet()
+    })
+
     confirm("User Registered!");
 }
 
@@ -319,11 +350,11 @@ const userTerminal = () => {
         // }
 
         logInUserValidate().then(userResp => {
-            currentUser = userResp.nickname;
-            indexedDBTerminal(_INDEXEDSTORENAME[1], userResp, "add").finally(()=>{
-                userLogInOut();
-                closeBtnClicked(".loginRegisterMenu");
-            })
+            console.log(userResp);
+            // currentUser = userResp.nickname;
+            // accountLogged(true);
+            // userLogInOut();
+            // closeBtnClicked(".loginRegisterMenu");
         }).catch(errResp => {
             currentUser = errResp;
             clearInputs(".loginRegisterMenu");
@@ -1033,19 +1064,12 @@ const userPanelBtn = (varBool, [btn1, btn2]) => {
 }
 
 const checkLoggedAccount = () => {
-    let returnVar = false;
     if(localStorage.getItem(_USERLOGGEDKEY)){
-        searchUserDBASE('username', localStorage.getItem(_USERLOGGEDKEY)) ? currentUser = localStorage.getItem(_USERLOGGEDKEY) : localStorage.removeItem(_USERLOGGEDKEY);
-    
-        if(currentUser){
-            returnVar = true;
-            userLogInOut();
-        }else{
-            localStorage.removeItem(_USERLOGGEDKEY);
-        }
+        searchUserDBASE('username', localStorage.getItem(_USERLOGGEDKEY)) ? 
+        currentUser = localStorage.getItem(_USERLOGGEDKEY) : localStorage.removeItem(_USERLOGGEDKEY);
     }
-    
-    return returnVar;
+
+    currentUser ? userLogInOut() : nodeLoad();
 }
 
 const accountLogged = isLogged => {
@@ -1256,6 +1280,21 @@ const updateUserDBASE = (username, propName, propValue) => {
             user[propName] = propValue;
         }
     })
+
+    let changeProperty = null;
+
+    if(propName==="pfp"){
+        changeProperty = "pfpLast";
+    }else if(propName==="nickname"){
+        changeProperty = "nickLast";
+    }
+
+    userProfileChange_DATABASE.forEach(item=>{
+        if(item.username === username){
+            item[changeProperty] = dateNowGet();
+        }
+    })
+    
 
     return returnVar;
 }
@@ -1603,7 +1642,5 @@ window.onload = () =>{
 
     indexedDBGetDB();
 
-    if(!checkLoggedAccount()){
-        nodeLoad();
-    }
+    checkLoggedAccount();
 }
