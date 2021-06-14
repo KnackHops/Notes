@@ -171,13 +171,13 @@ const logInUserValidate = () => {
     return new Promise((resolve, reject) => {
         if(!userName||!userPass){
             alert("Please fill out area");
-            reject(false);
+            reject(null);
         }else{
-            //fetching login data from backend
+            // fetching login data from backend
             new Promise((resolve, reject) => {
                 let returnVar = null;
 
-                login_DATABASE.forEach(user=>{
+                login_DATABASE.forEach(user => {
                     if(user.username === userName.toLowerCase()){
                         if(user.password === userPass){
                             resolve(user.username);
@@ -191,9 +191,68 @@ const logInUserValidate = () => {
                     alert("Invalid username or password");
                 }
             }).then(username=>{
-                //fetch user data for pfp and nickname
+                // fetch user data for pfp and nickname
+                new Promise((resolve, reject) => {
+                    let userProfile = null;
+                    userProfileChange_DATABASE.forEach(user=>{
+                        if(username === user.username){
+                            userProfile = user;
+                        }
+                    })
+
+                    userProfile ? resolve(userProfile) : reject(userProfile);
+                }).then(({username, pfpLast, nickLast}) => {
+                    indexedDBGetData(_INDEXEDSTORENAME[1], username).then(data => {
+                        if(data.target.result){
+                        // entry exists, therefore we compare dates to check if local data is updated
+                            let indexedPfpLast = data.target.result.pfpData.pfpLast;
+                            let indexedNickLast = data.target.result.nickData.nickLast;
+
+                            if(totalDate(indexedPfpLast) < totalDate(pfpLast)){
+
+                            }
+
+                            if(totalDate(indexedNickLast) < totalDate(nickLast)){
+
+                            }
+                        }else{
+                        // entry doesn't exist in the store, therefore we create it
+
+                            new Promise((resolve, reject) => {
+                                let userMobileNickname = null;
+                                user_DATABASE.forEach(eachUser => {
+                                    if(eachUser.username === username){
+                                        userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
+                                    }
+                                })
+
+                                userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
+                            }).then(({pfp, nickname}) => {
+                                let newUserProfile = {
+                                    username, 
+                                    pfpData: {
+                                        pfp,
+                                        pfpLast
+                                    },
+                                    nickData: {
+                                        nickname,
+                                        nickLast
+                                    }
+                                }
+
+                                indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
+                                    // returns newUserProfile;
+                                    resolve(newUserProfile);
+                                })
+                            });
+                        }
+                    })
+                }).catch(err => {
+                    // error if userProfile doesn't exist
+                })
             }).catch(err=>{
-                reject(false);
+                // returns null if user doesn't exist
+                reject(null);
             })
         }
     })
@@ -350,7 +409,7 @@ const userTerminal = () => {
         // }
 
         logInUserValidate().then(userResp => {
-            console.log(userResp);
+            console.log(userResp, "yap");
             // currentUser = userResp.nickname;
             // accountLogged(true);
             // userLogInOut();
@@ -1455,11 +1514,15 @@ const indexedDBGetData = (oSName, id) => {
                 let req = dbase.transaction(oSName, "readonly").objectStore(oSName).get(id);
 
                 req.onsuccess = data => {
-                    resolve(data);
+                    if(data){
+                        resolve(data);
+                    }else{
+                        resolve(null);
+                    }
                 }
 
                 req.onerror = e => {
-                    reject(false);
+                    reject(null);
                 }
             }
         }).catch(()=>{
