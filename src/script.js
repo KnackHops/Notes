@@ -167,12 +167,9 @@ const dateNowGet = () => {
     return newDate;
 }
 
-const logInUserValidate = () => {
+const logInUserValidate = (fromCheckLogged = false) => {
     return new Promise((resolve, reject) => {
-        if(!userName||!userPass){
-            alert("Please fill out area");
-            reject(null);
-        }else{
+        if(userName && userPass || fromCheckLogged === true){
             // fetching login data from backend
             new Promise((resolve, reject) => {
                 let returnVar = null;
@@ -207,13 +204,53 @@ const logInUserValidate = () => {
                         // entry exists, therefore we compare dates to check if local data is updated
                             let indexedPfpLast = data.target.result.pfpData.pfpLast;
                             let indexedNickLast = data.target.result.nickData.nickLast;
+                            let whichUpdated = {pfp: false, nick: false};
 
-                            if(totalDate(indexedPfpLast) < totalDate(pfpLast)){
 
+                            if(totalDate(indexedPfpLast) !== totalDate(pfpLast)){
+                                whichUpdated.pfp = true;
                             }
 
-                            if(totalDate(indexedNickLast) < totalDate(nickLast)){
+                            if(totalDate(indexedNickLast) !== totalDate(nickLast)){
+                                whichUpdated.nick = true;
+                            }
 
+                            if(whichUpdated.pfp === true || whichUpdated.nick === true){
+                                // update local entry is outdated
+
+                                new Promise((resolve) => {
+                                    userProfileChange_DATABASE.forEach(eachUserProfile =>{
+                                        if(eachUserProfile.username === username){
+                                            resolve(eachUserProfile);
+                                        }
+                                    }).then(userProfileCh => {
+                                        new Promise((resolve) => {
+                                            user_DATABASE.forEach(eachUser => {
+                                                if(eachUser.username === username){
+                                                    let updateUserProfile = {
+                                                        username,
+                                                        pfpData: {
+                                                            pfp: eachUser.pfp,
+                                                            pfpLast: userProfileCh.pfpLast
+                                                        },
+                                                        nickData: {
+                                                            nickname: eachUser.nickname,
+                                                            nickLast: userProfileCh.nickLast
+                                                        }
+                                                    }
+
+                                                    resolve(updateUserProfile);
+                                                }
+                                            })
+                                        }).then(updateUserProfile => {
+                                            indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
+                                            .finally(()=>resolve(updateUserProfile));
+                                        })
+                                    })
+                                })
+                            }else{
+                                // local entry is updated
+                                resolve(data.target.result);
                             }
                         }else{
                         // entry doesn't exist in the store, therefore we create it
@@ -254,6 +291,9 @@ const logInUserValidate = () => {
                 // returns null if user doesn't exist
                 reject(null);
             })
+        }else{
+            alert("Please fill out area");
+            reject(null);
         }
     })
 }
@@ -266,7 +306,7 @@ const userCache = username => {
     })
 }
 
-const userLogInOut = (loggingIn = true) => {
+const userLogInOut = (user = null, loggingIn) => {
     const btn1 = document.querySelector(".loginBtn");
     const btn2 = document.querySelector(".loginRegisterMenuBtn:nth-child(2) button");
     const userPanel = document.querySelector("nav .userPanel");
@@ -283,7 +323,6 @@ const userLogInOut = (loggingIn = true) => {
     btn2.classList.toggle("userPanelBtn");
 
     if(loggingIn){
-        let user = searchUserDBASE('username',currentUser,'nickname','pfp');
         const imgCon = document.createElement("li");
         const imgIn = document.createElement("img");
 
@@ -295,9 +334,9 @@ const userLogInOut = (loggingIn = true) => {
         imgCon.appendChild(imgIn);
         userNavBtns.appendChild(imgCon);
 
-        user['nickname'] ? panelBtnChange(user.nickname) : panelBtnChange(currentUser);
+        user.nickData.nickname ? panelBtnChange(user.nickname) : panelBtnChange(currentUser);
 
-        user['pfp'] === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user['pfp']);
+        user.nickData.pfp === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user['pfp']);
     }else{
         const imgCon = document.querySelector(".pfpContainer.nonProfilePfp");
         const imgIn = document.querySelector(".pfpContainer.nonProfilePfp .pfp");
@@ -409,11 +448,10 @@ const userTerminal = () => {
         // }
 
         logInUserValidate().then(userResp => {
-            console.log(userResp, "yap");
-            // currentUser = userResp.nickname;
-            // accountLogged(true);
-            // userLogInOut();
-            // closeBtnClicked(".loginRegisterMenu");
+            currentUser = userResp.nickname;
+            accountLogged(true);
+            userLogInOut(userResp, true);
+            closeBtnClicked(".loginRegisterMenu");
         }).catch(errResp => {
             currentUser = errResp;
             clearInputs(".loginRegisterMenu");
@@ -1123,12 +1161,16 @@ const userPanelBtn = (varBool, [btn1, btn2]) => {
 }
 
 const checkLoggedAccount = () => {
+    let user;
     if(localStorage.getItem(_USERLOGGEDKEY)){
-        searchUserDBASE('username', localStorage.getItem(_USERLOGGEDKEY)) ? 
-        currentUser = localStorage.getItem(_USERLOGGEDKEY) : localStorage.removeItem(_USERLOGGEDKEY);
+        logInUserValidate(true).then(userResp => {
+            currentUser = userResp.nickname;
+            user = userResp;
+            accountLogged(true);
+        })
     }
 
-    currentUser ? userLogInOut() : nodeLoad();
+    currentUser ? userLogInOut(user, true) : nodeLoad();
 }
 
 const accountLogged = isLogged => {
