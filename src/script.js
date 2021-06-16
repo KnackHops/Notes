@@ -167,21 +167,25 @@ const dateNowGet = () => {
     return newDate;
 }
 
-const logInUserValidate = (fromCheckLogged = false) => {
+const logInUserValidate = (localUser = null) => {
     return new Promise((resolve, reject) => {
-        if(userName && userPass || fromCheckLogged === true){
+        if(userName && userPass || localUser){
             // fetching login data from backend
             new Promise((resolve, reject) => {
                 let returnVar = null;
-
-                login_DATABASE.forEach(user => {
-                    if(user.username === userName.toLowerCase()){
-                        if(user.password === userPass){
-                            resolve(user.username);
-                            returnVar = true;
+                if(localUser){
+                        resolve(localUser);
+                        returnVar = true;
+                }else{
+                    login_DATABASE.forEach(user => {
+                        if(user.username === userName.toLowerCase()){
+                            if(user.password === userPass){
+                                resolve(user.username);
+                                returnVar = true;
+                            }
                         }
-                    }
-                })
+                    })
+                }
 
                 if(!returnVar){
                     reject(returnVar);
@@ -286,6 +290,7 @@ const logInUserValidate = (fromCheckLogged = false) => {
                     })
                 }).catch(err => {
                     // error if userProfile doesn't exist
+                    reject(null);
                 })
             }).catch(err=>{
                 // returns null if user doesn't exist
@@ -334,9 +339,9 @@ const userLogInOut = (user = null, loggingIn) => {
         imgCon.appendChild(imgIn);
         userNavBtns.appendChild(imgCon);
 
-        user.nickData.nickname ? panelBtnChange(user.nickname) : panelBtnChange(currentUser);
+        user.nickData.nickname ? panelBtnChange(user.nickData.nickname) : panelBtnChange(currentUser);
 
-        user.nickData.pfp === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user['pfp']);
+        user.pfpData.pfp === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user.pfpData.pfp);
     }else{
         const imgCon = document.querySelector(".pfpContainer.nonProfilePfp");
         const imgIn = document.querySelector(".pfpContainer.nonProfilePfp .pfp");
@@ -448,7 +453,8 @@ const userTerminal = () => {
         // }
 
         logInUserValidate().then(userResp => {
-            currentUser = userResp.nickname;
+            currentUser = userResp.username;
+            console.log("fr: ", currentUser);
             accountLogged(true);
             userLogInOut(userResp, true);
             closeBtnClicked(".loginRegisterMenu");
@@ -1163,14 +1169,19 @@ const userPanelBtn = (varBool, [btn1, btn2]) => {
 const checkLoggedAccount = () => {
     let user;
     if(localStorage.getItem(_USERLOGGEDKEY)){
-        logInUserValidate(true).then(userResp => {
-            currentUser = userResp.nickname;
+        let localUsername = localStorage.getItem(_USERLOGGEDKEY);
+        logInUserValidate(localUsername).then(userResp => {
+            currentUser = localUsername;
             user = userResp;
             accountLogged(true);
+            userLogInOut(user, true);
+        }).catch(() => {
+            accountLogged(false);
+            nodeLoad();
         })
+    }else{
+        nodeLoad();
     }
-
-    currentUser ? userLogInOut(user, true) : nodeLoad();
 }
 
 const accountLogged = isLogged => {
