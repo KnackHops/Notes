@@ -6,12 +6,14 @@
         <meta name="Author" content="KnackHops">
         <meta lang="UTF-8">
         <link rel="stylesheet" href="src/style.css">
+        <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+        <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
         <script src="src/script.js" defer></script>
     </head>
     <body class="fd fdFlow">
         <header class="fd">
             <div>
-                <h1>Notes</h1>
+                <h1>Notesilly</h1>
             </div>
             <nav>
                 <ul class="userPanel fd fdFlow">
@@ -60,7 +62,7 @@
         <section class="noteMenu fd fdFlow">
             <p class="closeBtn">x</p>
             <input type="text" aria-label="enter title of note" name="title_box" placeholder="title" class="titleBox">
-            <textarea name="messageBox" aria-label="enter body of note" placeholder="Write Note here" class="bodyBox"></textarea>
+            <div class="bodyBox"></div>
             <div class="extraInput fd">
                 <p class="fd">
                     <button type="submit" class="addBtn" disabled>Add Note</button>

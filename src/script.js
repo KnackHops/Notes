@@ -442,16 +442,6 @@ const registerUser = () => {
 
 const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
-        // currentUser = logInUserValidate();
-        // if(currentUser){
-        //     accountLogged(true);
-        //     userLogInOut();
-        //     closeBtnClicked(".loginRegisterMenu");
-        // }else{
-        //     currentUser=null;
-        //     clearInputs(".loginRegisterMenu")
-        // }
-
         logInUserValidate().then(userResp => {
             currentUser = userResp.username;
             console.log("fr: ", currentUser);
@@ -1077,6 +1067,7 @@ const sidePanelInputReset = (userSideNode, sidePanelNode, userSidePanelBtn=false
 }
 
 const clearInputs = whichNode => {
+    // affected by textarea
     if(whichNode===".loginRegisterMenu"){
         document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
     }else if(whichNode===".userSettings"){
@@ -1084,7 +1075,7 @@ const clearInputs = whichNode => {
         // nickLabelChange(null);
     }else{
         document.querySelector(`${whichNode} input`).value="";
-        document.querySelector(`${whichNode} textarea`).value="";
+        // document.querySelector(`${whichNode} textarea`).value="";
         document.querySelector(`${whichNode} .extraInput .checkEditContainer input`).checked = false;
         titleInput = "";
         bodyInput = "";
@@ -1093,11 +1084,12 @@ const clearInputs = whichNode => {
 }
 
 const activeNote = (fromEdit=false, isActive = false) => {
+    // affected by textarea
     
     const noteMenu = document.querySelector(".noteMenu");
 
     document.querySelector(".noteMenu input").disabled = !isActive;
-    document.querySelector(".noteMenu textarea").disabled = !isActive;
+    // document.querySelector(".noteMenu textarea").disabled = !isActive;
     // document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
 
     if(fromEdit){
@@ -1611,7 +1603,7 @@ window.onload = () =>{
     const addBtn = document.querySelector(".addBtn");
     const delBtn = document.querySelector(".delBtn");
     const titleBox = document.querySelector(".noteMenu input");
-    const bodyBox = document.querySelector(".noteMenu textarea");
+    const bodyBox = document.querySelector(".noteMenu > .bodyBox");
     const chckBox = document.querySelector(".noteMenu .extraInput .checkEditContainer input");
     const saveLocallyCheck = document.querySelector(".noteMenu .extraInput .saveLocallyContainer input");
 
@@ -1625,6 +1617,8 @@ window.onload = () =>{
     //otherVar
     let init = true;
 
+    let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, theme: 'snow'})
+
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,init);   
     });
@@ -1636,8 +1630,8 @@ window.onload = () =>{
             currentOpenID ? chkInputNote(e.target.value, "title") : chkInput(addBtn, e.target.value, bodyInput);
             titleInput = e.target.value;
         }else if(e.target.classList.contains("bodyBox")){
-            currentOpenID ? chkInputNote(e.target.value, "body") : chkInput(addBtn, e.target.value, titleInput);
-            bodyInput = e.target.value;
+            // currentOpenID ? chkInputNote(e.target.value, "body") : chkInput(addBtn, e.target.value, titleInput);
+            // bodyInput = e.target.value;
         }else if(e.target.id === "usernameInput" || e.target.id === "passwordInput"){
             e.target.id === "usernameInput" ? userName = e.target.value : userPass = e.target.value;
 
@@ -1706,7 +1700,7 @@ window.onload = () =>{
     }
 
     [...sectionCloseBtns, logOutBtn, userSettingsBtn, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
-    [usernameInput, emailInput, passwordInput, titleBox, bodyBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
+    [usernameInput, emailInput, passwordInput, titleBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
 
     window.addEventListener("keydown", e => {
         if(e.key==="Enter"){
