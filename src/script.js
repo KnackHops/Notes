@@ -939,7 +939,10 @@ const noteMenuPanelHandler = nodeClass => {
     
             locallySaveCheck.childNodes[1].innerText = date;
             document.querySelector(`${nodeClass} input`).value = prevTitleInput = title;
-            document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
+            prevBodyInput = body;
+            Quill.find(document.querySelector(`${nodeClass} .bodyBox`)).setText(prevBodyInput);
+            // affected by quill
+            // document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
     
             if(!editable){
                 document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
@@ -1072,9 +1075,11 @@ const clearInputs = whichNode => {
         document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
     }else if(whichNode===".userSettings"){
         pfpRemove(null);
-        // nickLabelChange(null);
     }else{
         document.querySelector(`${whichNode} input`).value="";
+        if(Quill.find(document.querySelector(`${whichNode} .bodyBox`))){
+            Quill.find(document.querySelector(`${whichNode} .bodyBox`)).setText("");
+        }
         // document.querySelector(`${whichNode} textarea`).value="";
         document.querySelector(`${whichNode} .extraInput .checkEditContainer input`).checked = false;
         titleInput = "";
@@ -1087,8 +1092,17 @@ const activeNote = (fromEdit=false, isActive = false) => {
     // affected by textarea
     
     const noteMenu = document.querySelector(".noteMenu");
+    const bodyBox = document.querySelector(".noteMenu .bodyBox");
 
     document.querySelector(".noteMenu input").disabled = !isActive;
+    if(Quill.find(bodyBox)){
+        Quill.find(bodyBox).enable(isActive);
+        if(isActive){
+            !bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+        }else{
+            bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+        }
+    }
     // document.querySelector(".noteMenu textarea").disabled = !isActive;
     // document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
 
@@ -1411,7 +1425,7 @@ const chkInput = (addBtn, fValue=null, sValue=null) => {
     }
 }
 
-const chkNoteInput = (value, value2, value3 = null, whichNodeFlow = null) => {
+const chkLogInInput = (value, value2, value3 = null, whichNodeFlow = null) => {
     const loginregisterFuncBtn = document.querySelector(".loginRegisterMenu p .loginregisterFuncBtn");
 
     if(whichNodeFlow){
@@ -1599,7 +1613,6 @@ window.onload = () =>{
     const emailInput = document.querySelector("#emailInput");
     //note
     const noteMenu = document.querySelector(".noteMenu");
-
     const addBtn = document.querySelector(".addBtn");
     const delBtn = document.querySelector(".delBtn");
     const titleBox = document.querySelector(".noteMenu input");
@@ -1617,14 +1630,13 @@ window.onload = () =>{
     //otherVar
     let init = true;
 
-    let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, theme: 'snow'})
-
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,init);   
     });
     
     activePanel();
 
+    let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, placeholder: "Body", theme: 'snow'});
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
             currentOpenID ? chkInputNote(e.target.value, "title") : chkInput(addBtn, e.target.value, bodyInput);
@@ -1635,10 +1647,10 @@ window.onload = () =>{
         }else if(e.target.id === "usernameInput" || e.target.id === "passwordInput"){
             e.target.id === "usernameInput" ? userName = e.target.value : userPass = e.target.value;
 
-            document.querySelector(".loginRegisterMenu").classList.contains("registerRN") ? chkNoteInput(userName, userPass, userEmail, "register") : chkNoteInput(userName, userPass);
+            document.querySelector(".loginRegisterMenu").classList.contains("registerRN") ? chkLogInInput(userName, userPass, userEmail, "register") : chkLogInInput(userName, userPass);
         }else if(e.target.id === "emailInput"){
             userEmail = e.target.value;
-            chkNoteInput(userName, userPass, userEmail, "register");
+            chkLogInInput(userName, userPass, userEmail, "register");
         }else if(e.target.id === "sidePanelInp"){
             sideInput = e.target.value;
             let printValue;
@@ -1701,6 +1713,18 @@ window.onload = () =>{
 
     [...sectionCloseBtns, logOutBtn, userSettingsBtn, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
+    
+    textBoxArea.on("text-change", (delta, old, from) => {
+        if(from !== "api"){
+            let val = JSON.stringify(delta);
+
+            if(delta.ops[0].delete){
+                val = null;
+            }
+            currentOpenID ? chkInputNote(val, body) : chkInput(addBtn, val, titleInput);
+            bodyInput = val;
+        }
+    })
 
     window.addEventListener("keydown", e => {
         if(e.key==="Enter"){
@@ -1708,7 +1732,8 @@ window.onload = () =>{
                 loginregisterFuncBtn.click();
             }else if(e.target === sidePanelInp){
                 sidePanelBtn.click();
-            }else if(e.target === titleBox || e.target === bodyBox){
+            }else if(e.target === titleBox || e.target.className === "ql-editor"){
+                // affected by bodyBox
                 addBtn.click();
             }
         }

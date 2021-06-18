@@ -227,16 +227,19 @@ body .backGroundPanel {
     cursor: pointer;
 }
 
-input, textarea {
+input, .bodyBox {
     border-radius: .75rem;
+}
+
+input {
     padding: 0 .25rem;
 }
 
-input:hover, textarea:hover {
+input:hover, .bodyBox:hover {
     box-shadow: .05rem .1rem .5rem blanchedalmond;
 }
 
-input:disabled:hover, textarea:disabled:hover {
+input:disabled:hover, .bodyBox.bodyBox.ql-disabled:hover {
     box-shadow: none;
 }
 
@@ -285,7 +288,7 @@ body .userSettings {
     justify-content: start;
 }
 
-section label, section textarea, section input {
+section label, section .bodyBox, section input {
     line-height: 2.25rem;
     font-size: 2.25rem;
 }
@@ -352,14 +355,22 @@ section .closeBtn:hover {
 .noteMenu input {
     line-height: 2.5rem;
     font-size: 2.25rem;
+    padding: 0 .75rem;
 }
 
-.noteMenu textarea {
+.noteMenu .bodyBox {
     margin: .55rem 0;
     flex: 1;
     resize: none;
     line-height: 2rem;
-    font-size: 1.75rem;
+    font-size: 1.95rem;
+    background-color: white;
+    color: black;
+}
+
+.noteMenu .bodyBox.ql-disabled {
+    background-color: grey;
+    color: lightgray;
 }
 
 .noteMenu .extraInput {
