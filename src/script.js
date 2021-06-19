@@ -9,8 +9,8 @@ let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, us
 {title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
 {title: "test2", body: "testingminefam2", editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
-let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
-
+// let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
+let noteList = [];
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
@@ -68,35 +68,29 @@ let dbaseLoadChk = [false, false];
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
-    nodeLoad();
+    nodeLoad().then(() => console.log("notes loaded"));
 }
 
-const orderList = whichOrder => {
-    let newDbase = [];
-
-    _DATABASE.forEach(item=>{
-        if(item.user===currentUser){
-            newDbase.push(item);
+const orderList = (whichOrder, reLoadDB = false) => {
+    new Promise((resolve) => {
+        if(reLoadDB && whichOrder !== "Default"){
+            nodeLoad(null, true).finally(() => resolve());
+        }else{
+            resolve();
+        }
+    }).then(() => {
+        if(whichOrder==="ascendCreated"){
+            nodeLoad(ascendCreated(noteList));
+        }else if(whichOrder==="descendCreated"){
+            nodeLoad(descendCreated(noteList));
+        }else if(whichOrder==="ascendEdited"){
+            nodeLoad(ascendEdited(noteList));
+        }else if(whichOrder==="descendEdited"){
+            nodeLoad(descendEdited(noteList));
+        }else{
+            nodeLoad();
         }
     })
-
-    local_DATABASE.forEach(item=>{
-        if(item){
-            newDbase.push(item);
-        }
-    })
-
-    if(whichOrder==="ascendCreated"){
-        nodeLoad(ascendCreated(newDbase));
-    }else if(whichOrder==="descendCreated"){
-        nodeLoad(descendCreated(newDbase));
-    }else if(whichOrder==="ascendEdited"){
-        nodeLoad(ascendEdited(newDbase));
-    }else if(whichOrder==="descendEdited"){
-        nodeLoad(descendEdited(newDbase));
-    }else{
-        nodeLoad();
-    }
 }
 
 const ascendCreated = arrayDbase => {
@@ -578,7 +572,7 @@ const deleteNote = () => {
     }).then(nodeLoad())
 }
 
-const createNote = (title=null, body=null, id=null, userN=null) => {
+const createNote = (title=null, id=null, userN=null) => {
     const ul = document.querySelector(".mainArticle .mainList")
     const li = document.createElement("li");
     const h3 = document.createElement("h3");
@@ -588,8 +582,6 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
     }else{
         if(!title){
             title="No Title";
-        }else if(!body){
-            body="Note here";
         }
     }
 
@@ -600,7 +592,18 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
         li.classList.add("defaultNote");
         li.addEventListener("dblclick", clicked);
     }else{
-        const pBody = document.createElement("p");
+        // turning quill
+        // h3 addEventListener opens noteMenu
+        // div Quill addEventListener opens bottom part
+        const pBody = document.createElement("div");
+        pBody.classList.add("listNoteBody");
+        let pBodyQuill = new Quill(pBody, {
+            modules: {
+                toolbar: false
+            },
+            placeholder: "Click to see information ▼",
+            readOnly: true,
+        })
         if(userN!=="localUser"){
             li.setAttribute("data-username", userN);
             li.setAttribute("id","note"+id);
@@ -608,50 +611,71 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
             li.setAttribute("data-username", userN);
             li.setAttribute("id","localNote"+id);
         }
-        pBody.textContent = body;
         li.appendChild(pBody);
         li.classList.add("userNote");
-        li.addEventListener("click",clicked);
+        h3.addEventListener("click",clicked);
+        pBody.addEventListener("click", () => noteBodyOpen(li.id));
     }
 
-    // li.classList.add("txtCen");
     ul.appendChild(li)
 }
 
-const clearNotes = () => {
+const noteBodyOpen = rawId => {
+    let id;
+
+    if(rawId.indexOf("note")===0){
+        id = Number((rawId).replace("note",""));
+        
+    }else{
+        id = Number((rawId).replace("localNote",""));
+
+
+    }
+}
+
+const clearNotes = altD => {
     const lists = document.querySelectorAll(".mainArticle ul li");
+    altD ? "" : noteList = [];
 
     lists.forEach(list => {
         list.parentNode.removeChild(list);
     })
 }
 
-const nodeLoad = (altDbase = null) => {
-    clearNotes();
+const nodeLoad = (altDbase = null, reload = false) => {
+    return new Promise((resolve) => {
+        altDbase ? (reload ? clearNotes(false) : clearNotes(true)) : clearNotes(false);
 
-    if(altDbase){
-        altDbase.forEach(item=>{
-            createNote(item.title, item.body, item.id, item.user);
-        })
-        createNote();
-    }else{
-        let mainDBPromise = new Promise((resolve,reject)=>{
-            if(_DATABASE){
-                _DATABASE.forEach(item=>{
-                    if(currentUser===item.user){
-                        createNote(item.title, item.body, item.id, item.user);
-                    }
-                })
-                resolve("done");
-            }
-        })
-
-        Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).then(resp=>{
-            console.log(resp[0].value, resp[1].value);
-        }).finally(e=>{
+        if(altDbase){
+            altDbase.forEach(({id, title, user})=>{
+                createNote(title, id, user);
+            })
             createNote();
-        })
-    }
+            resolve();
+        }else{
+            let mainDBPromise = new Promise((resolve,reject)=>{
+                if(_DATABASE){
+                    _DATABASE.forEach(note =>{
+                        if(currentUser === note.user){
+                            reload ? "" :
+                            createNote(note.title, note.id, note.user);
+                            noteList.push(note);
+                        }
+                    })
+                    resolve("done");
+                }else{
+                    reject(null);
+                }
+            })
+    
+            Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).finally(e=>{
+                reload ? "" :
+                createNote();
+                console.log(noteList);
+                resolve();
+            })
+        }
+    })
 }
 
 //clickedterminal
@@ -786,7 +810,7 @@ const backgroundPanelHandler = (nodeClass, fromMenu = true) => {
     }
 }
 
-const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
+const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
     if(nodeClass === ".loginRegisterMenu"){
         if(document.querySelector(nodeClass).classList.contains("registerRN") || initialize){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
@@ -796,6 +820,8 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         document.querySelector(".loginRegisterMenu > p > .loginregisterFuncBtn").disabled = true;
         document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled = true);
     }else if(nodeClass === ".noteMenu"){
+        const selectOrder = document.querySelector(".mainArticle .orderListCon select");
+
         if(userEdit){
             const addBtn = document.querySelector(".editBtn");
             addBtn.classList.toggle("editBtn");
@@ -812,6 +838,8 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
             }
         }
         chkInput(document.querySelector(".extraInput.fd > .fd > .addBtn"));
+        initialize ? "" :
+        orderList(selectOrder[selectOrder.selectedIndex].value, true);
         activeNote(false,false);
     }else if(nodeClass===".userSettings"){
         const sidePanelControl = document.querySelector(`${nodeClass} .sidePanelControl`);
@@ -893,28 +921,41 @@ const noteMenuPanelHandler = nodeClass => {
         }
         menuToggle(nodeClass);
     }else{
-        let id = currentOpenID;
-
-        new Promise((resolve, reject) => {
-            if(id.indexOf("note")===0){
-                id = Number(id.replace("note",""));
-                _DATABASE.forEach(item => {
-                    if(currentUser===item.user){
-                        if(id === item.id){
-                            resolve(item);
+        new Promise((resolve) => {
+            // made it shorter by preloading data through noteList
+            // if(id.indexOf("note")===0){
+            //     id = Number(id.replace("note",""));
+            //     _DATABASE.forEach(item => {
+            //         if(currentUser===item.user){
+            //             if(id === item.id){
+            //                 resolve(item);
+            //             }
+            //         }
+            //     })
+            // }else{
+            //     id = Number(id.replace("localNote",""));
+            //     indexedDBGetData(_INDEXEDSTORENAME[0] ,id).then(data => {
+            //         if(data){
+            //             resolve(data.target.result);
+            //         }else{
+            //             reject(false);
+            //         }
+            //     })
+            // }
+            noteList.forEach(note => {
+                if(currentOpenID.indexOf("note") === 0 && note.user !== "localUser"){
+                    if(currentUser === note.user){
+                        if(Number(currentOpenID.replace("note","")) === note.id){
+                            resolve(note);
                         }
                     }
-                })
-            }else{
-                id = Number(id.replace("localNote",""));
-                indexedDBGetData(_INDEXEDSTORENAME[0] ,id).then(data => {
-                    if(data){
-                        resolve(data.target.result);
-                    }else{
-                        reject(false);
+                }else if(currentOpenID.indexOf("localNote") === 0 && note.user === "localUser"){
+                    if(Number(currentOpenID.replace("localNote","")) === note.id){
+                        resolve(note);
                     }
-                })
-            }
+                }
+            })
+            
         }).then(noteData => {
             if(locallySaveCheck.classList.contains("hiddenSection")){
                 locallySaveCheck.classList.remove("hiddenSection");
@@ -1183,10 +1224,10 @@ const checkLoggedAccount = () => {
             userLogInOut(user, true);
         }).catch(() => {
             accountLogged(false);
-            nodeLoad();
+            nodeLoad().then(() => console.log("notes loaded"));
         })
     }else{
-        nodeLoad();
+        nodeLoad().then(() => console.log("notes loaded"));
     }
 }
 
@@ -1533,7 +1574,8 @@ const indexedDBGetAllNoteOS = () => {
             req.onsuccess = e => {
                 let cursor = e.target.result;
                 if(cursor){
-                    createNote(cursor.value.title, cursor.value.body, cursor.value.id, cursor.value.user);
+                    createNote(cursor.value.title, cursor.value.id, cursor.value.user);
+                    noteList.push(cursor.value);
                     x++;
                     cursor.continue();
                 }else{
@@ -1767,7 +1809,7 @@ window.onload = () =>{
 
     selectOrder.selectedIndex = 0;
 
-    selectOrder.addEventListener("click", e=>{
+    selectOrder.addEventListener("click", e => {
         checkingOpenedFrames();
     })
 
