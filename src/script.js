@@ -5,9 +5,9 @@ const _CHANGESETPROP = ["userPfpChk", 'userNickChk', 'userMobileChk'];
 const _INDEXEDDBNAME = "localUserNoteDB";
 const _INDEXEDSTORENAME = ["localNotesOS", "noteImageOS"];
 
-let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
-{title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
-{title: "test2", body: "testingminefam2", editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
+let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]}), editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
+{title: "test1", body: JSON.stringify({"ops":[{"insert":"test1\n"}]}), editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
+{title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
 // let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
 let noteList = [];
@@ -68,7 +68,7 @@ let dbaseLoadChk = [false, false];
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
-    nodeLoad().then(() => console.log("notes loaded"));
+    // nodeLoad().then(() => console.log("notes loaded"));
 }
 
 const orderList = (whichOrder, reLoadDB = false) => {
@@ -456,6 +456,12 @@ const userTerminal = () => {
     }
 }
 
+const idStringCut = str => {
+    let returnVar;
+    str.indexOf("note") === 0 ? returnVar =  "note" : returnVar = "localNote";
+    return returnVar;
+}
+
 const saveNote = () => {
     let id = null;
     let newDate = dateNowGet();
@@ -471,12 +477,6 @@ const saveNote = () => {
         })
     }else{
         user = "localUser";
-
-        local_DATABASE.forEach(item=>{
-            if(item){
-                id=item.id;
-            }
-        })
     }
 
     if(id || id===0){
@@ -497,34 +497,35 @@ const saveNote = () => {
 const editNote = () => {
     // editing note
     let id = currentOpenID;
-        let titleInputVal = titleInput;
-        let bodyInputVal = bodyInput;
+    let titleInputVal = titleInput;
+    let bodyInputVal = bodyInput;
+    let whichKind = idStringCut(id);
 
-        if(id.indexOf("note")===0){
-            id = Number(currentOpenID.replace("note",""));
-            _DATABASE.forEach(item=>{
-                if(item.user===currentUser){
-                    if(id===item.id){
-                        [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
-                        terminal(true);
+    id = Number(currentOpenID.replace(whichKind,""));
+
+    if(whichKind === "note"){
+        _DATABASE.forEach(item=>{
+            if(item.user===currentUser){
+                if(id===item.id){
+                    [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
+                    terminal(true);
+                }
+            }
+        })
+    }else{
+        indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
+            if(data){
+                data = data.target.result;
+                let oldUpdatedDate = data.lastUpdated;
+                [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
+                if(data.lastUpdated){
+                    if(data.lastUpdated !== oldUpdatedDate){
+                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(terminal(true));
                     }
                 }
-            })
-        }else{
-            id = Number(currentOpenID.replace("localNote",""));
-            indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
-                if(data){
-                    data = data.target.result;
-                    let oldUpdatedDate = data.lastUpdated;
-                    [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
-                    if(data.lastUpdated){
-                        if(data.lastUpdated !== oldUpdatedDate){
-                            indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(terminal(true));
-                        }
-                    }
-                }
-            })
-        }
+            }
+        })
+    }
     }
 
 const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
@@ -597,13 +598,15 @@ const createNote = (title=null, id=null, userN=null) => {
         // div Quill addEventListener opens bottom part
         const pBody = document.createElement("div");
         pBody.classList.add("listNoteBody");
-        let pBodyQuill = new Quill(pBody, {
+
+        new Quill(pBody, {
             modules: {
                 toolbar: false
             },
             placeholder: "Click to see information ▼",
             readOnly: true,
         })
+
         if(userN!=="localUser"){
             li.setAttribute("data-username", userN);
             li.setAttribute("id","note"+id);
@@ -613,24 +616,32 @@ const createNote = (title=null, id=null, userN=null) => {
         }
         li.appendChild(pBody);
         li.classList.add("userNote");
-        h3.addEventListener("click",clicked);
-        pBody.addEventListener("click", () => noteBodyOpen(li.id));
+        h3.addEventListener("click", clicked);
+        pBody.addEventListener("click", e=>{
+            e.target.parentNode.parentNode.id ? noteBodyOpen(e.target.parentNode.parentNode.id) : noteBodyOpen(e.target.parentNode.parentNode.parentNode.id);
+        });
     }
 
     ul.appendChild(li)
 }
 
-const noteBodyOpen = rawId => {
-    let id;
+const noteBodyOpen = (rawId) => {
+    let whichKind = idStringCut(rawId);
+    let id = Number(rawId.replace(whichKind,""));
 
-    if(rawId.indexOf("note")===0){
-        id = Number((rawId).replace("note",""));
-        
-    }else{
-        id = Number((rawId).replace("localNote",""));
-
-
-    }
+    noteList.forEach(note => {
+        if(whichKind === "note" && note.user !== "localUser"){
+            if(note.user === currentUser){
+                if(note.id === id){
+                    console.log(note.body)
+                }
+            }
+        }else if(whichKind === "localNote" && note.user === "localUser"){
+            if(note.id === id){
+                console.log(note.body);
+            }
+        }
+    })
 }
 
 const clearNotes = altD => {
@@ -681,11 +692,10 @@ const nodeLoad = (altDbase = null, reload = false) => {
 //clickedterminal
 const clicked = e => {
     e.preventDefault();
-
     clickedChk = true;
 
     setTimeout(()=> clickedChk = false, 100);
-
+    
     let btnClass = e.target.classList[0];
     const parent = e.target.parentNode;
     let nodeClass;
@@ -724,8 +734,8 @@ const clicked = e => {
     }else if(nodeClass==="editBtn"){
         editNote();
     }else if(nodeClass==="userNote"){
-        currentOpenID=parent.id;
-        currentOpenID ? menuClicked(".noteMenu",null,currentOpenID) : "";
+        currentOpenID = parent.id;
+        currentOpenID ? menuClicked(".noteMenu",null) : "";
     }else if(nodeClass==="closeBtn"){
         if(parent.classList.contains("userEdit")){
             closeBtnClicked("."+ parent.classList[0], true);
@@ -942,15 +952,18 @@ const noteMenuPanelHandler = nodeClass => {
             //         }
             //     })
             // }
+            let whichKind = idStringCut(currentOpenID);
+            let id = Number(currentOpenID.replace(whichKind, ""));
+
             noteList.forEach(note => {
-                if(currentOpenID.indexOf("note") === 0 && note.user !== "localUser"){
+                if(whichKind === "note" && note.user !== "localUser"){
                     if(currentUser === note.user){
-                        if(Number(currentOpenID.replace("note","")) === note.id){
+                        if(id === note.id){
                             resolve(note);
                         }
                     }
-                }else if(currentOpenID.indexOf("localNote") === 0 && note.user === "localUser"){
-                    if(Number(currentOpenID.replace("localNote","")) === note.id){
+                }else if(whichKind === "localNote" && note.user === "localUser"){
+                    if(id === note.id){
                         resolve(note);
                     }
                 }
@@ -970,18 +983,19 @@ const noteMenuPanelHandler = nodeClass => {
             addBtn.classList.toggle("editBtn");
             addBtn.textContent = "Edit";
 
-            title = titleInput = noteData.title;
-            body = bodyInput = noteData.body;
+            let title = titleInput = noteData.title;
+            let body = bodyInput = noteData.body;
             editable = noteData.editable;
-            date = `created: ${noteData.date.month+1}/${noteData.date.day}/${noteData.date.year}`;
+            let date = `created: ${noteData.date.month+1}/${noteData.date.day}/${noteData.date.year}`;
             if(noteData.lastUpdated){
-            date+=` edited: ${noteData.lastUpdated.month+1}/${noteData.lastUpdated.day}/${noteData.lastUpdated.year}`;
+                date+=` edited: ${noteData.lastUpdated.month+1}/${noteData.lastUpdated.day}/${noteData.lastUpdated.year}`;
             }
     
             locallySaveCheck.childNodes[1].innerText = date;
             document.querySelector(`${nodeClass} input`).value = prevTitleInput = title;
             prevBodyInput = body;
-            Quill.find(document.querySelector(`${nodeClass} .bodyBox`)).setText(prevBodyInput);
+
+            Quill.find(document.querySelector(`${nodeClass} .bodyBox`)).setContents(JSON.parse(prevBodyInput));
             // affected by quill
             // document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
     
@@ -1153,11 +1167,11 @@ const activeNote = (fromEdit=false, isActive = false) => {
         }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
             noteMenu.classList.toggle("nonEditable");
         }
+        
+        let whichKind = idStringCut(currentOpenID);
+        let id = Number(currentOpenID.replace(whichKind,""));
 
-        let id = currentOpenID;
-
-        if(id.indexOf("note")===0){
-            id = Number(currentOpenID.replace("note",""));
+        if(whichKind === "note"){
             _DATABASE.forEach(item => {
                 if(item.user===currentUser){
                     if(id===item.id){
@@ -1166,7 +1180,6 @@ const activeNote = (fromEdit=false, isActive = false) => {
                 }
             })
         }else{
-            id = Number(currentOpenID.replace("localNote",""));
             local_DATABASE.forEach(item=>{
                 if(id===item.id){
                     item.editable = !item.editable;
@@ -1758,11 +1771,12 @@ window.onload = () =>{
     
     textBoxArea.on("text-change", (delta, old, from) => {
         if(from !== "api"){
-            let val = JSON.stringify(delta);
+            let val = JSON.stringify(textBoxArea.getContents());
 
             if(delta.ops[0].delete){
                 val = null;
             }
+
             currentOpenID ? chkInputNote(val, body) : chkInput(addBtn, val, titleInput);
             bodyInput = val;
         }

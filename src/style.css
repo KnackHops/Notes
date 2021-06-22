@@ -262,9 +262,9 @@ body .loginRegisterMenu {
 
 body .noteMenu {
     padding: 1rem 1.5rem;
-    height: 30rem;
+    height: 40rem;
     width: 45rem;
-    top: 20%;
+    top: 10%;
     left: calc(50% - 22.5rem);
 }
 
@@ -360,8 +360,9 @@ section .closeBtn:hover {
     padding: 0 .75rem;
 }
 
-.noteMenu .bodyBox {
+.noteMenu > .bodyBox {
     margin: .55rem 0;
+    height: 0;
     flex: 1;
     resize: none;
     line-height: 2rem;
