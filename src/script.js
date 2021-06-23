@@ -5,12 +5,12 @@ const _CHANGESETPROP = ["userPfpChk", 'userNickChk', 'userMobileChk'];
 const _INDEXEDDBNAME = "localUserNoteDB";
 const _INDEXEDSTORENAME = ["localNotesOS", "noteImageOS"];
 
-let _DATABASE=[{title: "test", body: "testingminefam", editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
-{title: "test1", body: "testingminefam1", editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
-{title: "test2", body: "testingminefam2", editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
+let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]}), editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
+{title: "test1", body: JSON.stringify({"ops":[{"insert":"test1\n"}]}), editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
+{title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
-let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
-
+// let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
+let noteList = [];
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
@@ -64,39 +64,33 @@ let changedSettingsChk =
         userMobileChk: false
     }; 
 let clickedChk = false;
-let dbaseLoadChk = [false, false];
+let keyPress = null;
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
-    nodeLoad();
+    // nodeLoad().then(() => console.log("notes loaded"));
 }
 
-const orderList = whichOrder => {
-    let newDbase = [];
-
-    _DATABASE.forEach(item=>{
-        if(item.user===currentUser){
-            newDbase.push(item);
+const orderList = (whichOrder, reLoadDB = false) => {
+    new Promise((resolve) => {
+        if(reLoadDB && whichOrder !== "Default"){
+            nodeLoad(null, true).finally(() => resolve());
+        }else{
+            resolve();
+        }
+    }).then(() => {
+        if(whichOrder==="ascendCreated"){
+            nodeLoad(ascendCreated(noteList));
+        }else if(whichOrder==="descendCreated"){
+            nodeLoad(descendCreated(noteList));
+        }else if(whichOrder==="ascendEdited"){
+            nodeLoad(ascendEdited(noteList));
+        }else if(whichOrder==="descendEdited"){
+            nodeLoad(descendEdited(noteList));
+        }else{
+            nodeLoad();
         }
     })
-
-    local_DATABASE.forEach(item=>{
-        if(item){
-            newDbase.push(item);
-        }
-    })
-
-    if(whichOrder==="ascendCreated"){
-        nodeLoad(ascendCreated(newDbase));
-    }else if(whichOrder==="descendCreated"){
-        nodeLoad(descendCreated(newDbase));
-    }else if(whichOrder==="ascendEdited"){
-        nodeLoad(ascendEdited(newDbase));
-    }else if(whichOrder==="descendEdited"){
-        nodeLoad(descendEdited(newDbase));
-    }else{
-        nodeLoad();
-    }
 }
 
 const ascendCreated = arrayDbase => {
@@ -462,6 +456,12 @@ const userTerminal = () => {
     }
 }
 
+const idStringCut = str => {
+    let returnVar;
+    str.indexOf("note") === 0 ? returnVar =  "note" : returnVar = "localNote";
+    return returnVar;
+}
+
 const saveNote = () => {
     let id = null;
     let newDate = dateNowGet();
@@ -477,12 +477,6 @@ const saveNote = () => {
         })
     }else{
         user = "localUser";
-
-        local_DATABASE.forEach(item=>{
-            if(item){
-                id=item.id;
-            }
-        })
     }
 
     if(id || id===0){
@@ -503,34 +497,35 @@ const saveNote = () => {
 const editNote = () => {
     // editing note
     let id = currentOpenID;
-        let titleInputVal = titleInput;
-        let bodyInputVal = bodyInput;
+    let titleInputVal = titleInput;
+    let bodyInputVal = bodyInput;
+    let whichKind = idStringCut(id);
 
-        if(id.indexOf("note")===0){
-            id = Number(currentOpenID.replace("note",""));
-            _DATABASE.forEach(item=>{
-                if(item.user===currentUser){
-                    if(id===item.id){
-                        [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
-                        terminal(true);
+    id = Number(currentOpenID.replace(whichKind,""));
+
+    if(whichKind === "note"){
+        _DATABASE.forEach(item=>{
+            if(item.user===currentUser){
+                if(id===item.id){
+                    [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
+                    terminal(true);
+                }
+            }
+        })
+    }else{
+        indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
+            if(data){
+                data = data.target.result;
+                let oldUpdatedDate = data.lastUpdated;
+                [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
+                if(data.lastUpdated){
+                    if(data.lastUpdated !== oldUpdatedDate){
+                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(terminal(true));
                     }
                 }
-            })
-        }else{
-            id = Number(currentOpenID.replace("localNote",""));
-            indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
-                if(data){
-                    data = data.target.result;
-                    let oldUpdatedDate = data.lastUpdated;
-                    [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
-                    if(data.lastUpdated){
-                        if(data.lastUpdated !== oldUpdatedDate){
-                            indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(terminal(true));
-                        }
-                    }
-                }
-            })
-        }
+            }
+        })
+    }
     }
 
 const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
@@ -578,7 +573,7 @@ const deleteNote = () => {
     }).then(nodeLoad())
 }
 
-const createNote = (title=null, body=null, id=null, userN=null) => {
+const createNote = (title=null, id=null, userN=null) => {
     const ul = document.querySelector(".mainArticle .mainList")
     const li = document.createElement("li");
     const h3 = document.createElement("h3");
@@ -588,8 +583,6 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
     }else{
         if(!title){
             title="No Title";
-        }else if(!body){
-            body="Note here";
         }
     }
 
@@ -600,7 +593,20 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
         li.classList.add("defaultNote");
         li.addEventListener("dblclick", clicked);
     }else{
-        const pBody = document.createElement("p");
+        // turning quill
+        // h3 addEventListener opens noteMenu
+        // div Quill addEventListener opens bottom part
+        const pBody = document.createElement("div");
+        pBody.classList.add("listNoteBody");
+
+        new Quill(pBody, {
+            modules: {
+                toolbar: false
+            },
+            placeholder: "Click to see information ▼",
+            readOnly: true,
+        })
+
         if(userN!=="localUser"){
             li.setAttribute("data-username", userN);
             li.setAttribute("id","note"+id);
@@ -608,60 +614,108 @@ const createNote = (title=null, body=null, id=null, userN=null) => {
             li.setAttribute("data-username", userN);
             li.setAttribute("id","localNote"+id);
         }
-        pBody.textContent = body;
         li.appendChild(pBody);
         li.classList.add("userNote");
-        li.addEventListener("click",clicked);
+        h3.addEventListener("click", clicked);
+        pBody.addEventListener("click", e=>{
+            e.target.parentNode.parentNode.id ? noteBodyOpen(e.target.parentNode.parentNode.id) : noteBodyOpen(e.target.parentNode.parentNode.parentNode.id);
+        });
     }
 
-    // li.classList.add("txtCen");
     ul.appendChild(li)
 }
 
-const clearNotes = () => {
+const noteBodyOpen = (rawId) => {
+    let whichKind = idStringCut(rawId);
+    let id = Number(rawId.replace(whichKind,""));
+    let lineList;
+    let newDelta = {ops: []};
+
+    noteList.forEach(note => {
+        if(whichKind === "note" && note.user !== "localUser"){
+            if(note.user === currentUser){
+                if(note.id === id){
+                    let prevLink = null;
+                    lineList = JSON.parse(note.body);
+
+                    lineList.ops.forEach(line => {
+                        if(line.attributes){
+                            let returnVar = true;
+
+                            prevLink === line.attributes.link ? returnVar = false : "";
+
+                            if(returnVar){
+                                prevLink = line.attributes.link;
+                                newDelta.ops.push({insert: line.attributes.link}) ;
+                            }
+                        }else{
+                            prevLink ? prevLink = null : "";
+                            newDelta.ops.push(line);
+                        }
+                    })
+                    console.log(newDelta, lineList);
+                }
+            }
+        }else if(whichKind === "localNote" && note.user === "localUser"){
+            if(note.id === id){
+                console.log(JSON.parse(note.body));
+            }
+        }
+    })
+}
+
+const clearNotes = altD => {
     const lists = document.querySelectorAll(".mainArticle ul li");
+    altD ? "" : noteList = [];
 
     lists.forEach(list => {
         list.parentNode.removeChild(list);
     })
 }
 
-const nodeLoad = (altDbase = null) => {
-    clearNotes();
+const nodeLoad = (altDbase = null, reload = false) => {
+    return new Promise((resolve) => {
+        altDbase ? (reload ? clearNotes(false) : clearNotes(true)) : clearNotes(false);
 
-    if(altDbase){
-        altDbase.forEach(item=>{
-            createNote(item.title, item.body, item.id, item.user);
-        })
-        createNote();
-    }else{
-        let mainDBPromise = new Promise((resolve,reject)=>{
-            if(_DATABASE){
-                _DATABASE.forEach(item=>{
-                    if(currentUser===item.user){
-                        createNote(item.title, item.body, item.id, item.user);
-                    }
-                })
-                resolve("done");
-            }
-        })
-
-        Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).then(resp=>{
-            console.log(resp[0].value, resp[1].value);
-        }).finally(e=>{
+        if(altDbase){
+            altDbase.forEach(({id, title, user})=>{
+                createNote(title, id, user);
+            })
             createNote();
-        })
-    }
+            resolve();
+        }else{
+            let mainDBPromise = new Promise((resolve,reject)=>{
+                if(_DATABASE){
+                    _DATABASE.forEach(note =>{
+                        if(currentUser === note.user){
+                            reload ? "" :
+                            createNote(note.title, note.id, note.user);
+                            noteList.push(note);
+                        }
+                    })
+                    resolve("done");
+                }else{
+                    reject(null);
+                }
+            })
+    
+            Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).finally(e=>{
+                reload ? "" :
+                createNote();
+                console.log(noteList);
+                resolve();
+            })
+        }
+    })
 }
 
 //clickedterminal
 const clicked = e => {
     e.preventDefault();
-
     clickedChk = true;
 
     setTimeout(()=> clickedChk = false, 100);
-
+    
     let btnClass = e.target.classList[0];
     const parent = e.target.parentNode;
     let nodeClass;
@@ -700,8 +754,8 @@ const clicked = e => {
     }else if(nodeClass==="editBtn"){
         editNote();
     }else if(nodeClass==="userNote"){
-        currentOpenID=parent.id;
-        currentOpenID ? menuClicked(".noteMenu",null,currentOpenID) : "";
+        currentOpenID = parent.id;
+        currentOpenID ? menuClicked(".noteMenu",null) : "";
     }else if(nodeClass==="closeBtn"){
         if(parent.classList.contains("userEdit")){
             closeBtnClicked("."+ parent.classList[0], true);
@@ -786,7 +840,7 @@ const backgroundPanelHandler = (nodeClass, fromMenu = true) => {
     }
 }
 
-const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
+const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
     if(nodeClass === ".loginRegisterMenu"){
         if(document.querySelector(nodeClass).classList.contains("registerRN") || initialize){
             document.querySelector("section .emailContainer").classList.toggle("hiddenSection");
@@ -796,6 +850,8 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
         document.querySelector(".loginRegisterMenu > p > .loginregisterFuncBtn").disabled = true;
         document.querySelectorAll(".loginRegisterMenu p input").forEach(inp=>inp.disabled = true);
     }else if(nodeClass === ".noteMenu"){
+        const selectOrder = document.querySelector(".mainArticle .orderListCon select");
+
         if(userEdit){
             const addBtn = document.querySelector(".editBtn");
             addBtn.classList.toggle("editBtn");
@@ -811,7 +867,9 @@ const closeBtnClicked = (nodeClass,userEdit,initialize=false) => {
                 saveLocalChk = false;
             }
         }
-        chkInput(document.querySelector(".extraInput.fd > .fd > .addBtn"));
+        chkInputNoteDefault(document.querySelector(".extraInput.fd > .fd > .addBtn"));
+        initialize ? "" :
+        orderList(selectOrder[selectOrder.selectedIndex].value, true);
         activeNote(false,false);
     }else if(nodeClass===".userSettings"){
         const sidePanelControl = document.querySelector(`${nodeClass} .sidePanelControl`);
@@ -893,28 +951,44 @@ const noteMenuPanelHandler = nodeClass => {
         }
         menuToggle(nodeClass);
     }else{
-        let id = currentOpenID;
+        new Promise((resolve) => {
+            // made it shorter by preloading data through noteList
+            // if(id.indexOf("note")===0){
+            //     id = Number(id.replace("note",""));
+            //     _DATABASE.forEach(item => {
+            //         if(currentUser===item.user){
+            //             if(id === item.id){
+            //                 resolve(item);
+            //             }
+            //         }
+            //     })
+            // }else{
+            //     id = Number(id.replace("localNote",""));
+            //     indexedDBGetData(_INDEXEDSTORENAME[0] ,id).then(data => {
+            //         if(data){
+            //             resolve(data.target.result);
+            //         }else{
+            //             reject(false);
+            //         }
+            //     })
+            // }
+            let whichKind = idStringCut(currentOpenID);
+            let id = Number(currentOpenID.replace(whichKind, ""));
 
-        new Promise((resolve, reject) => {
-            if(id.indexOf("note")===0){
-                id = Number(id.replace("note",""));
-                _DATABASE.forEach(item => {
-                    if(currentUser===item.user){
-                        if(id === item.id){
-                            resolve(item);
+            noteList.forEach(note => {
+                if(whichKind === "note" && note.user !== "localUser"){
+                    if(currentUser === note.user){
+                        if(id === note.id){
+                            resolve(note);
                         }
                     }
-                })
-            }else{
-                id = Number(id.replace("localNote",""));
-                indexedDBGetData(_INDEXEDSTORENAME[0] ,id).then(data => {
-                    if(data){
-                        resolve(data.target.result);
-                    }else{
-                        reject(false);
+                }else if(whichKind === "localNote" && note.user === "localUser"){
+                    if(id === note.id){
+                        resolve(note);
                     }
-                })
-            }
+                }
+            })
+            
         }).then(noteData => {
             if(locallySaveCheck.classList.contains("hiddenSection")){
                 locallySaveCheck.classList.remove("hiddenSection");
@@ -929,17 +1003,21 @@ const noteMenuPanelHandler = nodeClass => {
             addBtn.classList.toggle("editBtn");
             addBtn.textContent = "Edit";
 
-            title = titleInput = noteData.title;
-            body = bodyInput = noteData.body;
+            let title = titleInput = noteData.title;
+            let body = bodyInput = noteData.body;
             editable = noteData.editable;
-            date = `created: ${noteData.date.month+1}/${noteData.date.day}/${noteData.date.year}`;
+            let date = `created: ${noteData.date.month+1}/${noteData.date.day}/${noteData.date.year}`;
             if(noteData.lastUpdated){
-            date+=` edited: ${noteData.lastUpdated.month+1}/${noteData.lastUpdated.day}/${noteData.lastUpdated.year}`;
+                date+=` edited: ${noteData.lastUpdated.month+1}/${noteData.lastUpdated.day}/${noteData.lastUpdated.year}`;
             }
     
             locallySaveCheck.childNodes[1].innerText = date;
             document.querySelector(`${nodeClass} input`).value = prevTitleInput = title;
-            document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
+            prevBodyInput = body;
+
+            Quill.find(document.querySelector(`${nodeClass} .bodyBox`)).setContents(JSON.parse(prevBodyInput));
+            // affected by quill
+            // document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
     
             if(!editable){
                 document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
@@ -1072,9 +1150,11 @@ const clearInputs = whichNode => {
         document.querySelectorAll(`${whichNode} p input`).forEach(input=>input.value = "");
     }else if(whichNode===".userSettings"){
         pfpRemove(null);
-        // nickLabelChange(null);
     }else{
         document.querySelector(`${whichNode} input`).value="";
+        if(Quill.find(document.querySelector(`${whichNode} .bodyBox`))){
+            Quill.find(document.querySelector(`${whichNode} .bodyBox`)).setText("");
+        }
         // document.querySelector(`${whichNode} textarea`).value="";
         document.querySelector(`${whichNode} .extraInput .checkEditContainer input`).checked = false;
         titleInput = "";
@@ -1087,8 +1167,17 @@ const activeNote = (fromEdit=false, isActive = false) => {
     // affected by textarea
     
     const noteMenu = document.querySelector(".noteMenu");
+    const bodyBox = document.querySelector(".noteMenu .bodyBox");
 
     document.querySelector(".noteMenu input").disabled = !isActive;
+    if(Quill.find(bodyBox)){
+        Quill.find(bodyBox).enable(isActive);
+        if(isActive){
+            !bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+        }else{
+            bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+        }
+    }
     // document.querySelector(".noteMenu textarea").disabled = !isActive;
     // document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
 
@@ -1098,11 +1187,11 @@ const activeNote = (fromEdit=false, isActive = false) => {
         }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
             noteMenu.classList.toggle("nonEditable");
         }
+        
+        let whichKind = idStringCut(currentOpenID);
+        let id = Number(currentOpenID.replace(whichKind,""));
 
-        let id = currentOpenID;
-
-        if(id.indexOf("note")===0){
-            id = Number(currentOpenID.replace("note",""));
+        if(whichKind === "note"){
             _DATABASE.forEach(item => {
                 if(item.user===currentUser){
                     if(id===item.id){
@@ -1111,7 +1200,6 @@ const activeNote = (fromEdit=false, isActive = false) => {
                 }
             })
         }else{
-            id = Number(currentOpenID.replace("localNote",""));
             local_DATABASE.forEach(item=>{
                 if(id===item.id){
                     item.editable = !item.editable;
@@ -1169,10 +1257,10 @@ const checkLoggedAccount = () => {
             userLogInOut(user, true);
         }).catch(() => {
             accountLogged(false);
-            nodeLoad();
+            nodeLoad().then(() => console.log("notes loaded"));
         })
     }else{
-        nodeLoad();
+        nodeLoad().then(() => console.log("notes loaded"));
     }
 }
 
@@ -1403,15 +1491,7 @@ const updateUserDBASE = (username, propName, propValue) => {
     return returnVar;
 }
 
-const chkInput = (addBtn, fValue=null, sValue=null) => {
-    if(fValue || sValue){
-            addBtn.disabled = false;
-    }else{
-            addBtn.disabled = true;
-    }
-}
-
-const chkNoteInput = (value, value2, value3 = null, whichNodeFlow = null) => {
+const chkLogInInput = (value, value2, value3 = null, whichNodeFlow = null) => {
     const loginregisterFuncBtn = document.querySelector(".loginRegisterMenu p .loginregisterFuncBtn");
 
     if(whichNodeFlow){
@@ -1421,7 +1501,15 @@ const chkNoteInput = (value, value2, value3 = null, whichNodeFlow = null) => {
     }
 }
 
-const chkInputNote = (val, whereFrom) => {
+const chkInputNoteDefault = (addBtn, fValue=null, sValue=null) => {
+    if(fValue || sValue){
+            addBtn.disabled = false;
+    }else{
+            addBtn.disabled = true;
+    }
+}
+
+const chkInputNoteUser = (val, whereFrom) => {
     let s_val;
     const editBtn = document.querySelector(".extraInput > .fd > .editBtn");
     whereFrom === "title" ? s_val = bodyInput : s_val = titleInput;
@@ -1519,7 +1607,8 @@ const indexedDBGetAllNoteOS = () => {
             req.onsuccess = e => {
                 let cursor = e.target.result;
                 if(cursor){
-                    createNote(cursor.value.title, cursor.value.body, cursor.value.id, cursor.value.user);
+                    createNote(cursor.value.title, cursor.value.id, cursor.value.user);
+                    noteList.push(cursor.value);
                     x++;
                     cursor.continue();
                 }else{
@@ -1599,7 +1688,6 @@ window.onload = () =>{
     const emailInput = document.querySelector("#emailInput");
     //note
     const noteMenu = document.querySelector(".noteMenu");
-
     const addBtn = document.querySelector(".addBtn");
     const delBtn = document.querySelector(".delBtn");
     const titleBox = document.querySelector(".noteMenu input");
@@ -1617,17 +1705,16 @@ window.onload = () =>{
     //otherVar
     let init = true;
 
-    let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, theme: 'snow'})
-
     sections.forEach(section=>{
         closeBtnClicked("."+section.classList[0],false,init);   
     });
     
     activePanel();
 
+    let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, placeholder: "Body", theme: 'snow'});
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
-            currentOpenID ? chkInputNote(e.target.value, "title") : chkInput(addBtn, e.target.value, bodyInput);
+            currentOpenID ? chkInputNoteUser(e.target.value, "title") : chkInputNoteDefault(addBtn, e.target.value, bodyInput);
             titleInput = e.target.value;
         }else if(e.target.classList.contains("bodyBox")){
             // currentOpenID ? chkInputNote(e.target.value, "body") : chkInput(addBtn, e.target.value, titleInput);
@@ -1635,10 +1722,10 @@ window.onload = () =>{
         }else if(e.target.id === "usernameInput" || e.target.id === "passwordInput"){
             e.target.id === "usernameInput" ? userName = e.target.value : userPass = e.target.value;
 
-            document.querySelector(".loginRegisterMenu").classList.contains("registerRN") ? chkNoteInput(userName, userPass, userEmail, "register") : chkNoteInput(userName, userPass);
+            document.querySelector(".loginRegisterMenu").classList.contains("registerRN") ? chkLogInInput(userName, userPass, userEmail, "register") : chkLogInInput(userName, userPass);
         }else if(e.target.id === "emailInput"){
             userEmail = e.target.value;
-            chkNoteInput(userName, userPass, userEmail, "register");
+            chkLogInInput(userName, userPass, userEmail, "register");
         }else if(e.target.id === "sidePanelInp"){
             sideInput = e.target.value;
             let printValue;
@@ -1701,19 +1788,35 @@ window.onload = () =>{
 
     [...sectionCloseBtns, logOutBtn, userSettingsBtn, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
+    
+    textBoxArea.on("text-change", (delta, old, from) => {
+        if(from !== "api"){
+            let val = JSON.stringify(textBoxArea.getContents());
+
+            if(delta.ops[0].delete){
+                val = null;
+            }
+            console.log(val);
+
+            currentOpenID ? chkInputNoteUser(val, "body") : chkInputNoteDefault(addBtn, val, titleInput);
+            bodyInput = val;
+        }
+    })
 
     window.addEventListener("keydown", e => {
-        if(e.key==="Enter"){
+        e.key !== "Enter" ? keyPress = e.key : "";
+
+        if(e.key === "Enter" && !keyPress){
             if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
                 loginregisterFuncBtn.click();
             }else if(e.target === sidePanelInp){
                 sidePanelBtn.click();
-            }else if(e.target === titleBox || e.target === bodyBox){
-                addBtn.click();
             }
         }
         
     });
+
+    window.addEventListener("keyup", e => e.key !== "Enter" ? keyPress = null : "");
 
     window.addEventListener("click",e => {
         if(!clickedChk){
@@ -1742,7 +1845,7 @@ window.onload = () =>{
 
     selectOrder.selectedIndex = 0;
 
-    selectOrder.addEventListener("click", e=>{
+    selectOrder.addEventListener("click", e => {
         checkingOpenedFrames();
     })
 
