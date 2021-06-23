@@ -64,7 +64,7 @@ let changedSettingsChk =
         userMobileChk: false
     }; 
 let clickedChk = false;
-let dbaseLoadChk = [false, false];
+let keyPress = null;
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
@@ -628,17 +628,37 @@ const createNote = (title=null, id=null, userN=null) => {
 const noteBodyOpen = (rawId) => {
     let whichKind = idStringCut(rawId);
     let id = Number(rawId.replace(whichKind,""));
+    let lineList;
+    let newDelta = {ops: []};
 
     noteList.forEach(note => {
         if(whichKind === "note" && note.user !== "localUser"){
             if(note.user === currentUser){
                 if(note.id === id){
-                    console.log(note.body)
+                    let prevLink = null;
+                    lineList = JSON.parse(note.body);
+
+                    lineList.ops.forEach(line => {
+                        if(line.attributes){
+                            let returnVar = true;
+
+                            prevLink === line.attributes.link ? returnVar = false : "";
+
+                            if(returnVar){
+                                prevLink = line.attributes.link;
+                                newDelta.ops.push({insert: line.attributes.link}) ;
+                            }
+                        }else{
+                            prevLink ? prevLink = null : "";
+                            newDelta.ops.push(line);
+                        }
+                    })
+                    console.log(newDelta, lineList);
                 }
             }
         }else if(whichKind === "localNote" && note.user === "localUser"){
             if(note.id === id){
-                console.log(note.body);
+                console.log(JSON.parse(note.body));
             }
         }
     })
@@ -847,7 +867,7 @@ const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
                 saveLocalChk = false;
             }
         }
-        chkInput(document.querySelector(".extraInput.fd > .fd > .addBtn"));
+        chkInputNoteDefault(document.querySelector(".extraInput.fd > .fd > .addBtn"));
         initialize ? "" :
         orderList(selectOrder[selectOrder.selectedIndex].value, true);
         activeNote(false,false);
@@ -1471,14 +1491,6 @@ const updateUserDBASE = (username, propName, propValue) => {
     return returnVar;
 }
 
-const chkInput = (addBtn, fValue=null, sValue=null) => {
-    if(fValue || sValue){
-            addBtn.disabled = false;
-    }else{
-            addBtn.disabled = true;
-    }
-}
-
 const chkLogInInput = (value, value2, value3 = null, whichNodeFlow = null) => {
     const loginregisterFuncBtn = document.querySelector(".loginRegisterMenu p .loginregisterFuncBtn");
 
@@ -1489,7 +1501,15 @@ const chkLogInInput = (value, value2, value3 = null, whichNodeFlow = null) => {
     }
 }
 
-const chkInputNote = (val, whereFrom) => {
+const chkInputNoteDefault = (addBtn, fValue=null, sValue=null) => {
+    if(fValue || sValue){
+            addBtn.disabled = false;
+    }else{
+            addBtn.disabled = true;
+    }
+}
+
+const chkInputNoteUser = (val, whereFrom) => {
     let s_val;
     const editBtn = document.querySelector(".extraInput > .fd > .editBtn");
     whereFrom === "title" ? s_val = bodyInput : s_val = titleInput;
@@ -1694,7 +1714,7 @@ window.onload = () =>{
     let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, placeholder: "Body", theme: 'snow'});
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
-            currentOpenID ? chkInputNote(e.target.value, "title") : chkInput(addBtn, e.target.value, bodyInput);
+            currentOpenID ? chkInputNoteUser(e.target.value, "title") : chkInputNoteDefault(addBtn, e.target.value, bodyInput);
             titleInput = e.target.value;
         }else if(e.target.classList.contains("bodyBox")){
             // currentOpenID ? chkInputNote(e.target.value, "body") : chkInput(addBtn, e.target.value, titleInput);
@@ -1776,25 +1796,27 @@ window.onload = () =>{
             if(delta.ops[0].delete){
                 val = null;
             }
+            console.log(val);
 
-            currentOpenID ? chkInputNote(val, body) : chkInput(addBtn, val, titleInput);
+            currentOpenID ? chkInputNoteUser(val, "body") : chkInputNoteDefault(addBtn, val, titleInput);
             bodyInput = val;
         }
     })
 
     window.addEventListener("keydown", e => {
-        if(e.key==="Enter"){
+        e.key !== "Enter" ? keyPress = e.key : "";
+
+        if(e.key === "Enter" && !keyPress){
             if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
                 loginregisterFuncBtn.click();
             }else if(e.target === sidePanelInp){
                 sidePanelBtn.click();
-            }else if(e.target === titleBox || e.target.className === "ql-editor"){
-                // affected by bodyBox
-                addBtn.click();
             }
         }
         
     });
+
+    window.addEventListener("keyup", e => e.key !== "Enter" ? keyPress = null : "");
 
     window.addEventListener("click",e => {
         if(!clickedChk){
