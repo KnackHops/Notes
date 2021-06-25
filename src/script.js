@@ -485,6 +485,44 @@ const saveNote = () => {
         id=0;
     }
 
+    if(bodyInput){
+        let bodyImageIndex = [];
+        let lastImageIndex = 0;
+        let returnVar = false;
+        let linePos;
+        let lineInsert = {insert: "\n"};
+
+        bodyInput.ops.forEach((line, index) => {
+            // console.log(index, line);
+            if(line.attributes){
+                // console.log("inside: ",index)
+                if(index === 0){
+                    lastImageIndex+=1
+                }else if(!bodyInput.ops[index - 1].attributes){
+                    let str = bodyInput.ops[index - 1].insert;
+
+                    str.indexOf("\n") === -1 ? returnVar = true : "";
+
+                    returnVar ? linePos = (index + bodyImageIndex.length) : "";
+                }
+
+                if(returnVar){
+                    bodyImageIndex.push({linePos, lineInsert});
+                    lastImageIndex = index + 1;
+                    returnVar = false;
+                    // console.log(index, lastImageIndex);
+                }
+            }
+        })
+
+
+
+        console.log(bodyImageIndex, bodyInput);
+
+        bodyInput = JSON.stringify(bodyInput);
+    }
+
+
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
         indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
@@ -1791,11 +1829,12 @@ window.onload = () =>{
     
     textBoxArea.on("text-change", (delta, old, from) => {
         if(from !== "api"){
-            let val = JSON.stringify(textBoxArea.getContents());
+            let val = textBoxArea.getContents();
 
             if(delta.ops[0].delete){
                 val = null;
             }
+
             console.log(val);
 
             currentOpenID ? chkInputNoteUser(val, "body") : chkInputNoteDefault(addBtn, val, titleInput);
