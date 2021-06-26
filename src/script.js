@@ -485,6 +485,43 @@ const saveNote = () => {
         id=0;
     }
 
+    if(bodyInput){
+        let bodyImageIndex = [];
+        let returnVar = false;
+        let linePos;
+        let lineInsert = {insert: "\n"};
+
+        bodyInput.ops.forEach((line, index) => {
+            // console.log(index, line);
+            if(line.attributes){
+                // console.log("inside: ",index)
+                if(index === 0){
+                    lastImageIndex+=1
+                }else if(!bodyInput.ops[index - 1].attributes){
+                    let str = bodyInput.ops[index - 1].insert;
+
+                    str.indexOf("\n") === -1 ? returnVar = true : "";
+
+                    returnVar ? linePos = (index + bodyImageIndex.length) : "";
+                }
+
+                if(returnVar){
+                    bodyImageIndex.push({linePos, lineInsert});
+                    lastImageIndex = index + 1;
+                    returnVar = false;
+                    // console.log(index, lastImageIndex);
+                }
+            }
+        })
+
+
+
+        console.log(bodyImageIndex, bodyInput);
+
+        bodyInput = JSON.stringify(bodyInput);
+    }
+
+
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
         indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
@@ -498,7 +535,7 @@ const editNote = () => {
     // editing note
     let id = currentOpenID;
     let titleInputVal = titleInput;
-    let bodyInputVal = bodyInput;
+    let bodyInputVal = JSON.stringify(bodyInput);
     let whichKind = idStringCut(id);
 
     id = Number(currentOpenID.replace(whichKind,""));
@@ -617,51 +654,74 @@ const createNote = (title=null, id=null, userN=null) => {
         li.appendChild(pBody);
         li.classList.add("userNote");
         h3.addEventListener("click", clicked);
-        pBody.addEventListener("click", e=>{
-            e.target.parentNode.parentNode.id ? noteBodyOpen(e.target.parentNode.parentNode.id) : noteBodyOpen(e.target.parentNode.parentNode.parentNode.id);
-        });
+        let handlerFunc = e => {
+            e.target.parentNode.parentNode.id ? noteBodyPreview(e.target.parentNode.parentNode.id, handlerFunc) : noteBodyPreview(e.target.parentNode.parentNode.parentNode.id, handlerFunc);
+        }
+        pBody.addEventListener("click", handlerFunc);
     }
 
     ul.appendChild(li)
 }
 
-const noteBodyOpen = (rawId) => {
+const noteBodyPreview = (rawId, handlerFunc) => {
     let whichKind = idStringCut(rawId);
     let id = Number(rawId.replace(whichKind,""));
-    let lineList;
     let newDelta = {ops: []};
+    let noteParti, userVal = "localUser";
 
-    noteList.forEach(note => {
-        if(whichKind === "note" && note.user !== "localUser"){
-            if(note.user === currentUser){
-                if(note.id === id){
-                    let prevLink = null;
-                    lineList = JSON.parse(note.body);
+    whichKind === "note" ? userVal = currentUser : "";
 
-                    lineList.ops.forEach(line => {
-                        if(line.attributes){
-                            let returnVar = true;
+    noteParti = noteList.filter(note => note.user === userVal && note.id === id);
 
-                            prevLink === line.attributes.link ? returnVar = false : "";
+    let newBody = JSON.parse(noteParti[0].body);
 
-                            if(returnVar){
-                                prevLink = line.attributes.link;
-                                newDelta.ops.push({insert: line.attributes.link}) ;
-                            }
-                        }else{
-                            prevLink ? prevLink = null : "";
-                            newDelta.ops.push(line);
-                        }
-                    })
-                    console.log(newDelta, lineList);
-                }
+    newDelta = linkCleaning(newBody.ops);
+
+    const noteNode = document.querySelector(`li[id=${rawId}]`);
+    noteNode.childNodes[1].removeEventListener("click", handlerFunc);
+    let quill = Quill.find(noteNode.childNodes[1]);
+    const bottomClose = document.createElement("div");
+
+    bottomClose.classList.add("noteCloseBtn");
+    bottomClose.classList.add(`close${rawId}`);
+    bottomClose.addEventListener("click", ()=> closeBodyPreview(rawId, quill, handlerFunc, noteNode));
+    bottomClose.textContent = "Close preview";
+    quill.setContents(newDelta);
+    noteNode.appendChild(bottomClose);
+}
+
+const closeBodyPreview = (rawId, quill, handlerFunc, noteNode) => {
+    quill.setContents("");
+    const closeNoteBtn = document.querySelector(`.close${rawId}`);
+    closeNoteBtn.parentNode.removeChild(closeNoteBtn);
+    noteNode.childNodes[1].addEventListener("click",handlerFunc);
+}
+
+const linkCleaning = noteArr => {
+    let newDelta = {ops: []};
+    let prevLinkCounter = false;
+
+    noteArr.forEach(line => {
+        if(line.attributes){
+            let returnVar = true;
+
+            if(prevLinkCounter){
+                returnVar = false;
+                prevLinkCounter = false;
             }
-        }else if(whichKind === "localNote" && note.user === "localUser"){
-            if(note.id === id){
-                console.log(JSON.parse(note.body));
+
+            if(returnVar){
+                prevLinkCounter = true;
+                line.attributes.link
+                newDelta.ops.push(line.attributes.link ? {insert: line.attributes.link} : {insert: line.attributes.alt});
             }
+        }else{
+            prevLinkCounter ? prevLinkCounter = false : "";
+            newDelta.ops.push(line);
         }
     })
+
+    return newDelta;
 }
 
 const clearNotes = altD => {
@@ -1791,11 +1851,12 @@ window.onload = () =>{
     
     textBoxArea.on("text-change", (delta, old, from) => {
         if(from !== "api"){
-            let val = JSON.stringify(textBoxArea.getContents());
+            let val = textBoxArea.getContents();
 
             if(delta.ops[0].delete){
                 val = null;
             }
+
             console.log(val);
 
             currentOpenID ? chkInputNoteUser(val, "body") : chkInputNoteDefault(addBtn, val, titleInput);
