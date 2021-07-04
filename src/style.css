@@ -224,9 +224,23 @@ body .backGroundPanel {
     cursor: pointer;
 }
 
-.mainList > li.userNote > div.listNoteBody.ql-container, li.userNote > div.listNoteBody.ql-container p {
-    font-size: 1.25rem;
+.mainList > li.userNote > div.listNoteBody.previewClosed.ql-container, li.userNote > div.listNoteBody.previewClosed.ql-container p, li > .noteCloseContainer > .noteCloseBtn {
     cursor: pointer;
+}
+
+li > .noteCloseContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.noteCloseContainer > .noteCloseBtn {
+    cursor: pointer;
+    outline: none;
+    border: 1px solid rgba(0, 0, 0, .2);
+    padding: 0 .5rem;
+    background: none;
+    margin-bottom: .5rem;
 }
 
 input, .bodyBox {
@@ -311,24 +325,19 @@ button.hiddenSection {
 
 /* closeBtn for sections */
 
-section .closeBtn {
+section .closeBtn, .noteMenu > .lockBtn {
     position: absolute;
     width: 0;
     font-size: 1.5rem;
     line-height: 1.5rem;
 }
 
-.noteMenu .closeBtn {
-    top: 0;
-    right: 1rem;
-}
-
-.loginRegisterMenu .closeBtn {
+.loginRegisterMenu > .closeBtn {
     left: 38.9rem;
     top: -.2rem;
 }
 
-section .closeBtn:hover {
+section > .closeBtn:hover {
     cursor: pointer;
 }
 
@@ -354,6 +363,35 @@ section .closeBtn:hover {
 }
 
 /* notemenu */
+.noteMenu > .lockBtn {
+    top: .25rem;
+    right: 3rem;
+}
+
+.noteMenu > .lockBtn > img {
+    height: 15px;
+    border-radius: 10px;
+    border: 1px solid white;
+    background-color: rgba(255, 255, 255, .4);
+}
+
+.noteMenu .lockBtn > img.locked {
+    background-color: white;
+}
+
+.noteMenu > .lockBtn > img:hover {
+    cursor: pointer;
+}
+
+.noteMenu > .closeBtn {
+    top: 0;
+    right: 1rem;
+}
+
+.noteMenu > input {
+    margin-top: 1rem;
+}
+
 .noteMenu input {
     line-height: 2.5rem;
     font-size: 2.25rem;

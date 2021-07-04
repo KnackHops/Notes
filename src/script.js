@@ -5,9 +5,9 @@ const _CHANGESETPROP = ["userPfpChk", 'userNickChk', 'userMobileChk'];
 const _INDEXEDDBNAME = "localUserNoteDB";
 const _INDEXEDSTORENAME = ["localNotesOS", "noteImageOS"];
 
-let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]}), editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
-{title: "test1", body: JSON.stringify({"ops":[{"insert":"test1\n"}]}), editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
-{title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
+let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]}), editable: false, locked: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
+{title: "test1", body: JSON.stringify({"ops":[{"insert":"test1\n"}]}), editable: false, locked: true, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
+{title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, locked: true, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
 // let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
 let noteList = [];
@@ -52,6 +52,7 @@ let sideInput;
 let userMobile, userNickName, userEditEmail;
 let _userMobile, _userNickName;
 let editable = false;
+let isLocked = false;
 let saveLocalChk = false;
 let clickingCheck = false;
 let currentOpenID = null;
@@ -485,48 +486,48 @@ const saveNote = () => {
         id=0;
     }
 
-    if(bodyInput){
-        let bodyImageIndex = [];
-        let returnVar = false;
-        let linePos;
-        let lineInsert = {insert: "\n"};
+    // if(bodyInput){
+    //     let bodyImageIndex = [];
+    //     let returnVar = false;
+    //     let linePos;
+    //     let lineInsert = {insert: "\n"};
 
-        bodyInput.ops.forEach((line, index) => {
-            // console.log(index, line);
-            if(line.attributes){
-                // console.log("inside: ",index)
-                if(index === 0){
-                    lastImageIndex+=1
-                }else if(!bodyInput.ops[index - 1].attributes){
-                    let str = bodyInput.ops[index - 1].insert;
+    //     bodyInput.ops.forEach((line, index) => {
+    //         // console.log(index, line);
+    //         if(line.attributes){
+    //             // console.log("inside: ",index)
+    //             if(index === 0){
+    //                 lastImageIndex+=1
+    //             }else if(!bodyInput.ops[index - 1].attributes){
+    //                 let str = bodyInput.ops[index - 1].insert;
 
-                    str.indexOf("\n") === -1 ? returnVar = true : "";
+    //                 str.indexOf("\n") === -1 ? returnVar = true : "";
 
-                    returnVar ? linePos = (index + bodyImageIndex.length) : "";
-                }
+    //                 returnVar ? linePos = (index + bodyImageIndex.length) : "";
+    //             }
 
-                if(returnVar){
-                    bodyImageIndex.push({linePos, lineInsert});
-                    lastImageIndex = index + 1;
-                    returnVar = false;
-                    // console.log(index, lastImageIndex);
-                }
-            }
-        })
+    //             if(returnVar){
+    //                 bodyImageIndex.push({linePos, lineInsert});
+    //                 lastImageIndex = index + 1;
+    //                 returnVar = false;
+    //                 // console.log(index, lastImageIndex);
+    //             }
+    //         }
+    //     })
 
 
 
-        console.log(bodyImageIndex, bodyInput);
+    //     console.log(bodyImageIndex, bodyInput);
 
-        bodyInput = JSON.stringify(bodyInput);
-    }
+    //     bodyInput = JSON.stringify(bodyInput);
+    // }
 
 
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
-        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
+        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, locked: isLocked, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
     }else{
-        _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate, lastUpdated: null});
+        _DATABASE.push({title: titleInput, body: bodyInput, editable, locked: isLocked, id, user, date: newDate, lastUpdated: null});
         terminal();
     }
 }
@@ -635,6 +636,7 @@ const createNote = (title=null, id=null, userN=null) => {
         // div Quill addEventListener opens bottom part
         const pBody = document.createElement("div");
         pBody.classList.add("listNoteBody");
+        pBody.classList.toggle("previewClosed");
 
         new Quill(pBody, {
             modules: {
@@ -678,15 +680,22 @@ const noteBodyPreview = (rawId, handlerFunc) => {
     newDelta = linkCleaning(newBody.ops);
 
     const noteNode = document.querySelector(`li[id=${rawId}]`);
+    noteNode.childNodes[1].classList.toggle("previewClosed");
     noteNode.childNodes[1].removeEventListener("click", handlerFunc);
     let quill = Quill.find(noteNode.childNodes[1]);
     const bottomClose = document.createElement("div");
+    const buttonClose = document.createElement("button");
 
-    bottomClose.classList.add("noteCloseBtn");
-    bottomClose.classList.add(`close${rawId}`);
-    bottomClose.addEventListener("click", ()=> closeBodyPreview(rawId, quill, handlerFunc, noteNode));
-    bottomClose.textContent = "Close preview";
+    bottomClose.classList.add("noteCloseContainer");
+    buttonClose.classList.add("noteCloseBtn");
+    buttonClose.classList.add(`close${rawId}`);
+    buttonClose.addEventListener("click", e=> {
+        e.preventDefault();
+        closeBodyPreview(rawId, quill, handlerFunc, noteNode)
+    });
+    buttonClose.textContent = "Close preview";
     quill.setContents(newDelta);
+    bottomClose.appendChild(buttonClose);
     noteNode.appendChild(bottomClose);
 }
 
@@ -695,6 +704,7 @@ const closeBodyPreview = (rawId, quill, handlerFunc, noteNode) => {
     const closeNoteBtn = document.querySelector(`.close${rawId}`);
     closeNoteBtn.parentNode.removeChild(closeNoteBtn);
     noteNode.childNodes[1].addEventListener("click",handlerFunc);
+    noteNode.childNodes[1].classList.toggle("previewClosed");
 }
 
 const linkCleaning = noteArr => {
@@ -1220,6 +1230,10 @@ const clearInputs = whichNode => {
         titleInput = "";
         bodyInput = "";
         editable = false;
+        if(document.querySelector(`${whichNode} > .lockBtn > img`).classList.contains("locked")){
+            isLocked = false;
+            document.querySelector(`${whichNode} > .lockBtn > img.locked`).classList.remove("locked");
+        }
     }
 }
 
@@ -1754,7 +1768,7 @@ window.onload = () =>{
     const bodyBox = document.querySelector(".noteMenu > .bodyBox");
     const chckBox = document.querySelector(".noteMenu .extraInput .checkEditContainer input");
     const saveLocallyCheck = document.querySelector(".noteMenu .extraInput .saveLocallyContainer input");
-
+    const lockedBtn = document.querySelector(".noteMenu > .lockBtn > img");
     //userSettings
     const userSettings = document.querySelector(".userSettings");
     const userSettingsBtn = document.querySelector(".userSettingsBtn");
@@ -1772,6 +1786,7 @@ window.onload = () =>{
     activePanel();
 
     let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, placeholder: "Body", theme: 'snow'});
+
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
             currentOpenID ? chkInputNoteUser(e.target.value, "title") : chkInputNoteDefault(addBtn, e.target.value, bodyInput);
@@ -1809,7 +1824,9 @@ window.onload = () =>{
     const checkingBox = e => {
         editable = e.target.checked;
         if(e.target.parentNode.parentNode.parentNode.classList.contains("userEdit")){
+            
             activeNote(true,editable);
+
             if(currentOpenID){
                 if(titleInput!==prevTitleInput){
                     document.querySelector(".noteMenu > input.titleBox").value = titleInput = prevTitleInput;
@@ -1824,6 +1841,11 @@ window.onload = () =>{
 
     const chkLocallySave = e => {
         saveLocalChk = e.target.checked;
+    }
+
+    const chkLocked = e => {
+        isLocked = !isLocked;
+        lockedBtn.classList.toggle("locked");
     }
 
     const focusedTT = e => {
@@ -1848,7 +1870,8 @@ window.onload = () =>{
 
     [...sectionCloseBtns, logOutBtn, userSettingsBtn, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
-    
+
+    lockedBtn.addEventListener("click", chkLocked);
     textBoxArea.on("text-change", (delta, old, from) => {
         if(from !== "api"){
             let val = textBoxArea.getContents();
