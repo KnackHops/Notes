@@ -47,6 +47,7 @@ let userProfileChange_DATABASE=[{
 
 let titleInput, bodyInput;
 let prevTitleInput, prevBodyInput;
+let prevEditable, prevLocked;
 let userName, userPass, userEmail;
 let sideInput;
 let userMobile, userNickName, userEditEmail;
@@ -69,7 +70,6 @@ let keyPress = null;
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
-    // nodeLoad().then(() => console.log("notes loaded"));
 }
 
 const orderList = (whichOrder, reLoadDB = false) => {
@@ -439,7 +439,6 @@ const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
         logInUserValidate().then(userResp => {
             currentUser = userResp.username;
-            console.log("fr: ", currentUser);
             accountLogged(true);
             userLogInOut(userResp, true);
             closeBtnClicked(".loginRegisterMenu");
@@ -461,6 +460,38 @@ const idStringCut = str => {
     let returnVar;
     str.indexOf("note") === 0 ? returnVar =  "note" : returnVar = "localNote";
     return returnVar;
+}
+
+const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prevLockedChk) => {
+    return new Promise ((resolve) => {
+        if(isEditableChk !== prevEditableChk || isLockedChk !== prevLockedChk){
+            let whichKind = idStringCut(currentOpenID);
+            let id = Number(currentOpenID.replace(whichKind,""));
+        
+            if(whichKind === "note"){
+                _DATABASE.forEach(item => {
+                    if(item.id === id){
+                        item.editable = isEditableChk;
+                        item.locked = isLockedChk;
+                    }
+                })
+                resolve();
+            }else{
+                indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data => {
+                    data = data.target.result;
+                    data.editable = isEditableChk;
+                    data.locked = isLockedChk;
+            
+                    indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(()=>resolve()).catch(() => {
+                        console.log("Error saving editable/locked");
+                        resolve();
+                    })
+                })
+             }
+        }else{
+            resolve();
+        }
+    })
 }
 
 const saveNote = () => {
@@ -486,43 +517,6 @@ const saveNote = () => {
         id=0;
     }
 
-    // if(bodyInput){
-    //     let bodyImageIndex = [];
-    //     let returnVar = false;
-    //     let linePos;
-    //     let lineInsert = {insert: "\n"};
-
-    //     bodyInput.ops.forEach((line, index) => {
-    //         // console.log(index, line);
-    //         if(line.attributes){
-    //             // console.log("inside: ",index)
-    //             if(index === 0){
-    //                 lastImageIndex+=1
-    //             }else if(!bodyInput.ops[index - 1].attributes){
-    //                 let str = bodyInput.ops[index - 1].insert;
-
-    //                 str.indexOf("\n") === -1 ? returnVar = true : "";
-
-    //                 returnVar ? linePos = (index + bodyImageIndex.length) : "";
-    //             }
-
-    //             if(returnVar){
-    //                 bodyImageIndex.push({linePos, lineInsert});
-    //                 lastImageIndex = index + 1;
-    //                 returnVar = false;
-    //                 // console.log(index, lastImageIndex);
-    //             }
-    //         }
-    //     })
-
-
-
-    //     console.log(bodyImageIndex, bodyInput);
-
-    //     bodyInput = JSON.stringify(bodyInput);
-    // }
-
-
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
         indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, locked: isLocked, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
@@ -536,7 +530,7 @@ const editNote = () => {
     // editing note
     let id = currentOpenID;
     let titleInputVal = titleInput;
-    let bodyInputVal = JSON.stringify(bodyInput);
+    let bodyInputVal = bodyInput;
     let whichKind = idStringCut(id);
 
     id = Number(currentOpenID.replace(whichKind,""));
@@ -554,6 +548,7 @@ const editNote = () => {
         indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
             if(data){
                 data = data.target.result;
+                
                 let oldUpdatedDate = data.lastUpdated;
                 [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
                 if(data.lastUpdated){
@@ -564,7 +559,7 @@ const editNote = () => {
             }
         })
     }
-    }
+}
 
 const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
     let edited=false;
@@ -937,10 +932,21 @@ const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
                 saveLocalChk = false;
             }
         }
+
         chkInputNoteDefault(document.querySelector(".extraInput.fd > .fd > .addBtn"));
-        initialize ? "" :
-        orderList(selectOrder[selectOrder.selectedIndex].value, true);
-        activeNote(false,false);
+        if(document.querySelector(".lockBtn > img").classList.contains("locked")){
+            document.querySelector(".lockBtn > img").classList.remove("locked");
+        }
+        if(!initialize){
+            if(currentOpenID){
+                saveEditableAndLocked(editable, prevEditable, isLocked, prevLocked).then(()=>{
+                    orderList(selectOrder[selectOrder.selectedIndex].value, true);
+                })
+            }else{
+                orderList(selectOrder[selectOrder.selectedIndex].value, true);
+            }
+        }
+        activeNote();
     }else if(nodeClass===".userSettings"){
         const sidePanelControl = document.querySelector(`${nodeClass} .sidePanelControl`);
 
@@ -1002,7 +1008,7 @@ const noteMenuPanelHandler = nodeClass => {
     if(!currentOpenID){
         delBtn.classList.add("hiddenSection");
         delBtn.disabled = true;
-        activeNote(false, true);
+        activeNote(true);
         if(currentUser){
             if(locallySaveCheck.classList.contains("hiddenSection")){
                 locallySaveCheck.classList.remove("hiddenSection");
@@ -1022,26 +1028,6 @@ const noteMenuPanelHandler = nodeClass => {
         menuToggle(nodeClass);
     }else{
         new Promise((resolve) => {
-            // made it shorter by preloading data through noteList
-            // if(id.indexOf("note")===0){
-            //     id = Number(id.replace("note",""));
-            //     _DATABASE.forEach(item => {
-            //         if(currentUser===item.user){
-            //             if(id === item.id){
-            //                 resolve(item);
-            //             }
-            //         }
-            //     })
-            // }else{
-            //     id = Number(id.replace("localNote",""));
-            //     indexedDBGetData(_INDEXEDSTORENAME[0] ,id).then(data => {
-            //         if(data){
-            //             resolve(data.target.result);
-            //         }else{
-            //             reject(false);
-            //         }
-            //     })
-            // }
             let whichKind = idStringCut(currentOpenID);
             let id = Number(currentOpenID.replace(whichKind, ""));
 
@@ -1058,8 +1044,11 @@ const noteMenuPanelHandler = nodeClass => {
                     }
                 }
             })
-            
         }).then(noteData => {
+            if(noteData.locked){
+                document.querySelector(`.lockBtn > img`).classList.add("locked");
+            }
+
             if(locallySaveCheck.classList.contains("hiddenSection")){
                 locallySaveCheck.classList.remove("hiddenSection");
             }
@@ -1075,7 +1064,8 @@ const noteMenuPanelHandler = nodeClass => {
 
             let title = titleInput = noteData.title;
             let body = bodyInput = noteData.body;
-            editable = noteData.editable;
+            prevEditable = editable = noteData.editable;
+            prevLocked = isLocked = noteData.locked;
             let date = `created: ${noteData.date.month+1}/${noteData.date.day}/${noteData.date.year}`;
             if(noteData.lastUpdated){
                 date+=` edited: ${noteData.lastUpdated.month+1}/${noteData.lastUpdated.day}/${noteData.lastUpdated.year}`;
@@ -1089,14 +1079,13 @@ const noteMenuPanelHandler = nodeClass => {
             // affected by quill
             // document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
     
-            if(!editable){
-                document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
-                activeNote();
-            }else{
+            if(editable){
                 document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = true;
-                activeNote(false, true);
+            }else{
+                document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
             }
     
+            editActiveNote();
             delBtn.disabled=false;
             delBtn.classList.remove("hiddenSection");
             document.querySelector(nodeClass).classList.toggle("userEdit");
@@ -1229,7 +1218,7 @@ const clearInputs = whichNode => {
         document.querySelector(`${whichNode} .extraInput .checkEditContainer input`).checked = false;
         titleInput = "";
         bodyInput = "";
-        editable = false;
+        isLocked = editable = prevEditable = prevLocked = false;
         if(document.querySelector(`${whichNode} > .lockBtn > img`).classList.contains("locked")){
             isLocked = false;
             document.querySelector(`${whichNode} > .lockBtn > img.locked`).classList.remove("locked");
@@ -1237,55 +1226,71 @@ const clearInputs = whichNode => {
     }
 }
 
-const activeNote = (fromEdit=false, isActive = false) => {
+const activeNote = (isActive = false, fromEdit = false) => {
     // affected by textarea
-    
-    const noteMenu = document.querySelector(".noteMenu");
     const bodyBox = document.querySelector(".noteMenu .bodyBox");
 
     document.querySelector(".noteMenu input").disabled = !isActive;
+
     if(Quill.find(bodyBox)){
         Quill.find(bodyBox).enable(isActive);
         if(isActive){
-            !bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+            bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.toggle("ql-disabled") : "";
         }else{
-            bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+            !bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.toggle("ql-disabled") : "";
+        }
+    }
+
+    if(!fromEdit){
+        if(document.querySelector(".noteMenu").classList.contains("nonEditable")){
+            document.querySelector(".noteMenu").classList.toggle("nonEditable");
         }
     }
     // document.querySelector(".noteMenu textarea").disabled = !isActive;
     // document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
 
-    if(fromEdit){
-        if(isActive && noteMenu.classList.contains("nonEditable")){
-            noteMenu.classList.toggle("nonEditable");
-        }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
-            noteMenu.classList.toggle("nonEditable");
-        }
+    // if(fromEdit){
+    //     if(isActive && noteMenu.classList.contains("nonEditable")){
+    //         noteMenu.classList.toggle("nonEditable");
+    //     }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
+    //         noteMenu.classList.toggle("nonEditable");
+    //     }
         
-        let whichKind = idStringCut(currentOpenID);
-        let id = Number(currentOpenID.replace(whichKind,""));
+    //     let whichKind = idStringCut(currentOpenID);
+    //     let id = Number(currentOpenID.replace(whichKind,""));
 
-        if(whichKind === "note"){
-            _DATABASE.forEach(item => {
-                if(item.user===currentUser){
-                    if(id===item.id){
-                        item.editable = !item.editable;
-                    }
-                }
-            })
-        }else{
-            local_DATABASE.forEach(item=>{
-                if(id===item.id){
-                    item.editable = !item.editable;
-                }
-            })
-        }
+    //     if(whichKind === "note"){
+    //         _DATABASE.forEach(item => {
+    //             if(item.user===currentUser){
+    //                 if(id===item.id){
+    //                     item.editable = !item.editable;
+    //                 }
+    //             }
+    //         })
+    //     }else{
+    //         local_DATABASE.forEach(item=>{
+    //             if(id===item.id){
+    //                 item.editable = !item.editable;
+    //             }
+    //         })
+    //     }
         
-    }else{
-        if(noteMenu.classList.contains("nonEditable")){
-            noteMenu.classList.toggle("nonEditable");
-        }
+    // }else{
+    //     if(noteMenu.classList.contains("nonEditable")){
+    //         noteMenu.classList.toggle("nonEditable");
+    //     }
+    // }
+}
+
+const editActiveNote = () => {
+    const noteMenu = document.querySelector(".noteMenu");
+
+    if(editable && noteMenu.classList.contains("nonEditable")){
+        noteMenu.classList.toggle("nonEditable");
+    }else if(!editable && !noteMenu.classList.contains("nonEditable")){
+        noteMenu.classList.toggle("nonEditable");
     }
+    activeNote(editable, true);
 }
 
 const activePanel = () => {
@@ -1365,8 +1370,6 @@ const saveProfile = () => {
 
     closeBtnClicked(".userSettings");
 }
-
-
 
 const saveProfileBtnChk = (chkDisable, currentChange=null) =>{
     const saveProfileBtn = document.querySelector(".userSettings > .saveProfileBtnCon > .saveProfileBtn");
@@ -1642,13 +1645,13 @@ const indexedDBTerminal = (oSName ,item, transactionType) => {
                 let store = tx.objectStore(oSName);
     
                 tx.oncomplete = () => {
-                    console.log("hey");
+                    // console.log("hey");
                     resolve(true);
                 }
     
                 tx.onerror = () => {
                     
-                    console.log("nop");
+                    // console.log("nop");
                     reject(false);
                 }
     
@@ -1825,7 +1828,7 @@ window.onload = () =>{
         editable = e.target.checked;
         if(e.target.parentNode.parentNode.parentNode.classList.contains("userEdit")){
             
-            activeNote(true,editable);
+            editActiveNote();
 
             if(currentOpenID){
                 if(titleInput!==prevTitleInput){
@@ -1880,7 +1883,7 @@ window.onload = () =>{
                 val = null;
             }
 
-            console.log(val);
+            val = JSON.stringify(val);
 
             currentOpenID ? chkInputNoteUser(val, "body") : chkInputNoteDefault(addBtn, val, titleInput);
             bodyInput = val;
