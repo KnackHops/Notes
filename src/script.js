@@ -5,9 +5,9 @@ const _CHANGESETPROP = ["userPfpChk", 'userNickChk', 'userMobileChk'];
 const _INDEXEDDBNAME = "localUserNoteDB";
 const _INDEXEDSTORENAME = ["localNotesOS", "noteImageOS"];
 
-let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]}), editable: false, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
-{title: "test1", body: JSON.stringify({"ops":[{"insert":"test1\n"}]}), editable: false, id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
-{title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
+let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]}), editable: false, locked: false, lockedPass: null, id:0, user: "affafu", date: { month: 0, day: 25, year: 2021}, lastUpdated: { month: 3, day: 15, year: 2021}},
+{title: "test1", body: JSON.stringify({"ops":[{"insert":"test1\n"}]}), editable: false, locked: true, lockedPass: "123", id:1, user: "affafu", date: { month: 2, day: 27, year: 2021}, lastUpdated: { month: 2, day: 29, year: 2021}},
+{title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, locked: true, lockedPass: "123", id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
 // let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
 let noteList = [];
@@ -47,11 +47,14 @@ let userProfileChange_DATABASE=[{
 
 let titleInput, bodyInput;
 let prevTitleInput, prevBodyInput;
+let prevEditable, prevLocked;
 let userName, userPass, userEmail;
 let sideInput;
 let userMobile, userNickName, userEditEmail;
 let _userMobile, _userNickName;
 let editable = false;
+let isLocked = false;
+let isLockedPass = null;
 let saveLocalChk = false;
 let clickingCheck = false;
 let currentOpenID = null;
@@ -65,10 +68,11 @@ let changedSettingsChk =
     }; 
 let clickedChk = false;
 let keyPress = null;
+let isSavedAlready = false;
+let promptInp = null;
 
 const terminal = (userEdit=false) => {
     closeBtnClicked(".noteMenu",userEdit);
-    // nodeLoad().then(() => console.log("notes loaded"));
 }
 
 const orderList = (whichOrder, reLoadDB = false) => {
@@ -438,7 +442,6 @@ const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
         logInUserValidate().then(userResp => {
             currentUser = userResp.username;
-            console.log("fr: ", currentUser);
             accountLogged(true);
             userLogInOut(userResp, true);
             closeBtnClicked(".loginRegisterMenu");
@@ -462,8 +465,43 @@ const idStringCut = str => {
     return returnVar;
 }
 
+const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prevLockedChk, lockedPassVal) => {
+    return new Promise ((resolve) => {
+        if(isEditableChk !== prevEditableChk || isLockedChk !== prevLockedChk){
+            console.log(isEditableChk, prevEditableChk, isLockedChk, prevLockedChk);
+            let whichKind = idStringCut(currentOpenID);
+            let id = Number(currentOpenID.replace(whichKind,""));
+        
+            if(whichKind === "note"){
+                _DATABASE.forEach(item => {
+                    if(item.id === id){
+                        item.editable = isEditableChk;
+                        item.locked = isLockedChk;
+                    }
+                })
+                resolve();
+            }else{
+                indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data => {
+                    data = data.target.result;
+                    data.editable = isEditableChk;
+                    data.locked = isLockedChk;
+                    data.lockedPass = lockedPassVal;
+            
+                    indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(()=>resolve()).catch(() => {
+                        console.log("Error saving editable/locked");
+                        resolve();
+                    })
+                })
+             }
+        }else{
+            resolve();
+        }
+    })
+}
+
 const saveNote = () => {
     let id = null;
+    let lockedPass = null;
     let newDate = dateNowGet();
     let user;
 
@@ -485,48 +523,15 @@ const saveNote = () => {
         id=0;
     }
 
-    if(bodyInput){
-        let bodyImageIndex = [];
-        let returnVar = false;
-        let linePos;
-        let lineInsert = {insert: "\n"};
-
-        bodyInput.ops.forEach((line, index) => {
-            // console.log(index, line);
-            if(line.attributes){
-                // console.log("inside: ",index)
-                if(index === 0){
-                    lastImageIndex+=1
-                }else if(!bodyInput.ops[index - 1].attributes){
-                    let str = bodyInput.ops[index - 1].insert;
-
-                    str.indexOf("\n") === -1 ? returnVar = true : "";
-
-                    returnVar ? linePos = (index + bodyImageIndex.length) : "";
-                }
-
-                if(returnVar){
-                    bodyImageIndex.push({linePos, lineInsert});
-                    lastImageIndex = index + 1;
-                    returnVar = false;
-                    // console.log(index, lastImageIndex);
-                }
-            }
-        })
-
-
-
-        console.log(bodyImageIndex, bodyInput);
-
-        bodyInput = JSON.stringify(bodyInput);
-    }
-
+    isLocked ? lockedPass = isLockedPass : null;
+    
+    isSavedAlready = true;
 
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
-        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
+        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, locked: isLocked, lockedPass, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
     }else{
-        _DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate, lastUpdated: null});
+        _DATABASE.push({title: titleInput, body: bodyInput, editable, locked: isLocked, lockedPass, id, user, date: newDate, lastUpdated: null});
         terminal();
     }
 }
@@ -535,7 +540,7 @@ const editNote = () => {
     // editing note
     let id = currentOpenID;
     let titleInputVal = titleInput;
-    let bodyInputVal = JSON.stringify(bodyInput);
+    let bodyInputVal = bodyInput;
     let whichKind = idStringCut(id);
 
     id = Number(currentOpenID.replace(whichKind,""));
@@ -553,6 +558,7 @@ const editNote = () => {
         indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
             if(data){
                 data = data.target.result;
+                
                 let oldUpdatedDate = data.lastUpdated;
                 [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
                 if(data.lastUpdated){
@@ -563,7 +569,7 @@ const editNote = () => {
             }
         })
     }
-    }
+}
 
 const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
     let edited=false;
@@ -635,6 +641,7 @@ const createNote = (title=null, id=null, userN=null) => {
         // div Quill addEventListener opens bottom part
         const pBody = document.createElement("div");
         pBody.classList.add("listNoteBody");
+        pBody.classList.toggle("previewClosed");
 
         new Quill(pBody, {
             modules: {
@@ -678,15 +685,22 @@ const noteBodyPreview = (rawId, handlerFunc) => {
     newDelta = linkCleaning(newBody.ops);
 
     const noteNode = document.querySelector(`li[id=${rawId}]`);
+    noteNode.childNodes[1].classList.toggle("previewClosed");
     noteNode.childNodes[1].removeEventListener("click", handlerFunc);
     let quill = Quill.find(noteNode.childNodes[1]);
     const bottomClose = document.createElement("div");
+    const buttonClose = document.createElement("button");
 
-    bottomClose.classList.add("noteCloseBtn");
-    bottomClose.classList.add(`close${rawId}`);
-    bottomClose.addEventListener("click", ()=> closeBodyPreview(rawId, quill, handlerFunc, noteNode));
-    bottomClose.textContent = "Close preview";
+    bottomClose.classList.add("noteCloseContainer");
+    buttonClose.classList.add("noteCloseBtn");
+    buttonClose.classList.add(`close${rawId}`);
+    buttonClose.addEventListener("click", e=> {
+        e.preventDefault();
+        closeBodyPreview(rawId, quill, handlerFunc, noteNode)
+    });
+    buttonClose.textContent = "Close preview";
     quill.setContents(newDelta);
+    bottomClose.appendChild(buttonClose);
     noteNode.appendChild(bottomClose);
 }
 
@@ -695,6 +709,7 @@ const closeBodyPreview = (rawId, quill, handlerFunc, noteNode) => {
     const closeNoteBtn = document.querySelector(`.close${rawId}`);
     closeNoteBtn.parentNode.removeChild(closeNoteBtn);
     noteNode.childNodes[1].addEventListener("click",handlerFunc);
+    noteNode.childNodes[1].classList.toggle("previewClosed");
 }
 
 const linkCleaning = noteArr => {
@@ -927,10 +942,27 @@ const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
                 saveLocalChk = false;
             }
         }
+
         chkInputNoteDefault(document.querySelector(".extraInput.fd > .fd > .addBtn"));
-        initialize ? "" :
-        orderList(selectOrder[selectOrder.selectedIndex].value, true);
-        activeNote(false,false);
+
+        if(document.querySelector(".lockBtn > img").classList.contains("locked")){
+            document.querySelector(".lockBtn > img").classList.remove("locked");
+        }
+
+        if(!initialize){
+            if(currentOpenID && !isSavedAlready){
+                saveEditableAndLocked(editable, prevEditable, isLocked, prevLocked, isLockedPass).then(()=>{
+                    isSavedAlready = false;
+                    noteMenuLockReset();
+                    orderList(selectOrder[selectOrder.selectedIndex].value, true);
+                })
+            }else{
+                isSavedAlready = false;
+                noteMenuLockReset();
+                orderList(selectOrder[selectOrder.selectedIndex].value, true);
+            }
+        }
+        activeNote();
     }else if(nodeClass===".userSettings"){
         const sidePanelControl = document.querySelector(`${nodeClass} .sidePanelControl`);
 
@@ -992,7 +1024,7 @@ const noteMenuPanelHandler = nodeClass => {
     if(!currentOpenID){
         delBtn.classList.add("hiddenSection");
         delBtn.disabled = true;
-        activeNote(false, true);
+        activeNote(true);
         if(currentUser){
             if(locallySaveCheck.classList.contains("hiddenSection")){
                 locallySaveCheck.classList.remove("hiddenSection");
@@ -1012,26 +1044,6 @@ const noteMenuPanelHandler = nodeClass => {
         menuToggle(nodeClass);
     }else{
         new Promise((resolve) => {
-            // made it shorter by preloading data through noteList
-            // if(id.indexOf("note")===0){
-            //     id = Number(id.replace("note",""));
-            //     _DATABASE.forEach(item => {
-            //         if(currentUser===item.user){
-            //             if(id === item.id){
-            //                 resolve(item);
-            //             }
-            //         }
-            //     })
-            // }else{
-            //     id = Number(id.replace("localNote",""));
-            //     indexedDBGetData(_INDEXEDSTORENAME[0] ,id).then(data => {
-            //         if(data){
-            //             resolve(data.target.result);
-            //         }else{
-            //             reject(false);
-            //         }
-            //     })
-            // }
             let whichKind = idStringCut(currentOpenID);
             let id = Number(currentOpenID.replace(whichKind, ""));
 
@@ -1048,53 +1060,89 @@ const noteMenuPanelHandler = nodeClass => {
                     }
                 }
             })
-            
         }).then(noteData => {
-            if(locallySaveCheck.classList.contains("hiddenSection")){
-                locallySaveCheck.classList.remove("hiddenSection");
-            }
-    
-            if(!locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
-                locallySaveCheck.childNodes[3].classList.add("hiddenSection");
-                locallySaveCheck.childNodes[3].disabled ? "" : locallySaveCheck.childNodes[3].disabled = true;
-            }
-    
-            addBtn.classList.toggle("addBtn");
-            addBtn.classList.toggle("editBtn");
-            addBtn.textContent = "Edit";
-
-            let title = titleInput = noteData.title;
-            let body = bodyInput = noteData.body;
-            editable = noteData.editable;
-            let date = `created: ${noteData.date.month+1}/${noteData.date.day}/${noteData.date.year}`;
-            if(noteData.lastUpdated){
-                date+=` edited: ${noteData.lastUpdated.month+1}/${noteData.lastUpdated.day}/${noteData.lastUpdated.year}`;
-            }
-    
-            locallySaveCheck.childNodes[1].innerText = date;
-            document.querySelector(`${nodeClass} input`).value = prevTitleInput = title;
-            prevBodyInput = body;
-
-            Quill.find(document.querySelector(`${nodeClass} .bodyBox`)).setContents(JSON.parse(prevBodyInput));
-            // affected by quill
-            // document.querySelector(`${nodeClass} textarea`).value = prevBodyInput = body;
-    
-            if(!editable){
-                document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
-                activeNote();
-            }else{
-                document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = true;
-                activeNote(false, true);
-            }
-    
-            delBtn.disabled=false;
-            delBtn.classList.remove("hiddenSection");
-            document.querySelector(nodeClass).classList.toggle("userEdit");
-
-            menuToggle(nodeClass);
-        });
+            noteMenuUnlock(noteData).then(()=>{
+                noteMenuLoadProfile(noteData, nodeClass, locallySaveCheck, delBtn, addBtn);
+            }).catch(() => {
+                window.alert("Wrong password!");
+            })
+        })
         
     }
+}
+
+const noteMenuUnlock = data => {
+    return new Promise((resolve, reject) => {
+        if(data.locked){
+            let notePass = window.prompt("Enter note password here: ");
+
+            if(notePass === data.lockedPass){
+                resolve();
+            }else{
+                reject();
+            }
+        }else{
+            resolve();
+        }
+    })
+}
+
+const noteMenuLockReset = () => {
+    if(isLocked){
+        isLocked = false;
+        isLockedPass = null;
+    }
+}
+
+const noteMenuLoadProfile = (data, nodeClass, locallySaveCheck, delBtn, addBtn) => {
+    if(locallySaveCheck.classList.contains("hiddenSection")){
+        locallySaveCheck.classList.remove("hiddenSection");
+    }
+
+    if(!locallySaveCheck.childNodes[3].classList.contains("hiddenSection")){
+        locallySaveCheck.childNodes[3].classList.add("hiddenSection");
+        locallySaveCheck.childNodes[3].disabled ? "" : locallySaveCheck.childNodes[3].disabled = true;
+    }
+
+    addBtn.classList.toggle("addBtn");
+    addBtn.classList.toggle("editBtn");
+    addBtn.textContent = "Edit";
+
+    let title = titleInput = data.title;
+    let body = bodyInput = data.body;
+
+    prevEditable = editable = data.editable;
+    prevLocked = isLocked = data.locked;
+    isLockedPass = data.lockedPass;
+
+    let date = `created: ${data.date.month+1}/${data.date.day}/${data.date.year}`;
+    if(data.lastUpdated){
+        date+=` edited: ${data.lastUpdated.month+1}/${data.lastUpdated.day}/${data.lastUpdated.year}`;
+    }
+
+    locallySaveCheck.childNodes[1].innerText = date;
+    document.querySelector(`${nodeClass} input`).value = prevTitleInput = title;
+    prevBodyInput = body;
+
+    Quill.find(document.querySelector(`${nodeClass} .bodyBox`)).setContents(JSON.parse(prevBodyInput));
+
+    if(editable){
+        document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = true;
+    }else{
+        document.querySelector(`${nodeClass} .extraInput .checkEditContainer input`).checked = false;
+    }
+
+    if(isLocked){
+        document.querySelector(`${nodeClass} .lockBtn > img`).classList.toggle("locked");
+    }
+
+    editActiveNote();
+
+    delBtn.disabled=false;
+    delBtn.classList.remove("hiddenSection");
+    document.querySelector(nodeClass).classList.toggle("userEdit");
+
+    menuToggle(nodeClass);
 }
 
 const userSettingsPanelHandler = nodeClass => {
@@ -1219,59 +1267,79 @@ const clearInputs = whichNode => {
         document.querySelector(`${whichNode} .extraInput .checkEditContainer input`).checked = false;
         titleInput = "";
         bodyInput = "";
-        editable = false;
+        isLocked = editable = prevEditable = prevLocked = false;
+        if(document.querySelector(`${whichNode} > .lockBtn > img`).classList.contains("locked")){
+            isLocked = false;
+            document.querySelector(`${whichNode} > .lockBtn > img.locked`).classList.remove("locked");
+        }
     }
 }
 
-const activeNote = (fromEdit=false, isActive = false) => {
+const activeNote = (isActive = false, fromEdit = false) => {
     // affected by textarea
-    
-    const noteMenu = document.querySelector(".noteMenu");
     const bodyBox = document.querySelector(".noteMenu .bodyBox");
 
     document.querySelector(".noteMenu input").disabled = !isActive;
+
     if(Quill.find(bodyBox)){
         Quill.find(bodyBox).enable(isActive);
         if(isActive){
-            !bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+            bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.toggle("ql-disabled") : "";
         }else{
-            bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.contains("ql-disabled").toggle : "";
+            !bodyBox.classList.contains("ql-disabled") ? bodyBox.classList.toggle("ql-disabled") : "";
+        }
+    }
+
+    if(!fromEdit){
+        if(document.querySelector(".noteMenu").classList.contains("nonEditable")){
+            document.querySelector(".noteMenu").classList.toggle("nonEditable");
         }
     }
     // document.querySelector(".noteMenu textarea").disabled = !isActive;
     // document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
 
-    if(fromEdit){
-        if(isActive && noteMenu.classList.contains("nonEditable")){
-            noteMenu.classList.toggle("nonEditable");
-        }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
-            noteMenu.classList.toggle("nonEditable");
-        }
+    // if(fromEdit){
+    //     if(isActive && noteMenu.classList.contains("nonEditable")){
+    //         noteMenu.classList.toggle("nonEditable");
+    //     }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
+    //         noteMenu.classList.toggle("nonEditable");
+    //     }
         
-        let whichKind = idStringCut(currentOpenID);
-        let id = Number(currentOpenID.replace(whichKind,""));
+    //     let whichKind = idStringCut(currentOpenID);
+    //     let id = Number(currentOpenID.replace(whichKind,""));
 
-        if(whichKind === "note"){
-            _DATABASE.forEach(item => {
-                if(item.user===currentUser){
-                    if(id===item.id){
-                        item.editable = !item.editable;
-                    }
-                }
-            })
-        }else{
-            local_DATABASE.forEach(item=>{
-                if(id===item.id){
-                    item.editable = !item.editable;
-                }
-            })
-        }
+    //     if(whichKind === "note"){
+    //         _DATABASE.forEach(item => {
+    //             if(item.user===currentUser){
+    //                 if(id===item.id){
+    //                     item.editable = !item.editable;
+    //                 }
+    //             }
+    //         })
+    //     }else{
+    //         local_DATABASE.forEach(item=>{
+    //             if(id===item.id){
+    //                 item.editable = !item.editable;
+    //             }
+    //         })
+    //     }
         
-    }else{
-        if(noteMenu.classList.contains("nonEditable")){
-            noteMenu.classList.toggle("nonEditable");
-        }
+    // }else{
+    //     if(noteMenu.classList.contains("nonEditable")){
+    //         noteMenu.classList.toggle("nonEditable");
+    //     }
+    // }
+}
+
+const editActiveNote = () => {
+    const noteMenu = document.querySelector(".noteMenu");
+
+    if(editable && noteMenu.classList.contains("nonEditable")){
+        noteMenu.classList.toggle("nonEditable");
+    }else if(!editable && !noteMenu.classList.contains("nonEditable")){
+        noteMenu.classList.toggle("nonEditable");
     }
+    activeNote(editable, true);
 }
 
 const activePanel = () => {
@@ -1351,8 +1419,6 @@ const saveProfile = () => {
 
     closeBtnClicked(".userSettings");
 }
-
-
 
 const saveProfileBtnChk = (chkDisable, currentChange=null) =>{
     const saveProfileBtn = document.querySelector(".userSettings > .saveProfileBtnCon > .saveProfileBtn");
@@ -1628,13 +1694,13 @@ const indexedDBTerminal = (oSName ,item, transactionType) => {
                 let store = tx.objectStore(oSName);
     
                 tx.oncomplete = () => {
-                    console.log("hey");
+                    // console.log("hey");
                     resolve(true);
                 }
     
                 tx.onerror = () => {
                     
-                    console.log("nop");
+                    // console.log("nop");
                     reject(false);
                 }
     
@@ -1738,6 +1804,8 @@ window.onload = () =>{
     const selectOrder = document.querySelector(".mainArticle .orderListCon select");
     const sectionCloseBtns = document.querySelectorAll("section .closeBtn");
     const logOutBtn = document.querySelector(".userPanel li .logOutBtn");
+    const dialogInp = document.querySelector("#dialogInp");
+    const dialogBtn = document.querySelector(".inpDiaBox > dialogBtn");
     //loginRegister
     const loginRegisterMenu = document.querySelector(".loginRegisterMenu");
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
@@ -1754,7 +1822,7 @@ window.onload = () =>{
     const bodyBox = document.querySelector(".noteMenu > .bodyBox");
     const chckBox = document.querySelector(".noteMenu .extraInput .checkEditContainer input");
     const saveLocallyCheck = document.querySelector(".noteMenu .extraInput .saveLocallyContainer input");
-
+    const lockedBtn = document.querySelector(".noteMenu > .lockBtn > img");
     //userSettings
     const userSettings = document.querySelector(".userSettings");
     const userSettingsBtn = document.querySelector(".userSettingsBtn");
@@ -1772,13 +1840,11 @@ window.onload = () =>{
     activePanel();
 
     let textBoxArea = new Quill(bodyBox, {modules :{ toolbar: false}, placeholder: "Body", theme: 'snow'});
+
     const insertInput = e => {
         if(e.target.classList.contains("titleBox")){
             currentOpenID ? chkInputNoteUser(e.target.value, "title") : chkInputNoteDefault(addBtn, e.target.value, bodyInput);
             titleInput = e.target.value;
-        }else if(e.target.classList.contains("bodyBox")){
-            // currentOpenID ? chkInputNote(e.target.value, "body") : chkInput(addBtn, e.target.value, titleInput);
-            // bodyInput = e.target.value;
         }else if(e.target.id === "usernameInput" || e.target.id === "passwordInput"){
             e.target.id === "usernameInput" ? userName = e.target.value : userPass = e.target.value;
 
@@ -1803,13 +1869,23 @@ window.onload = () =>{
             }
 
             printValue ? sidePanelBtn.textContent = printValue : "";
+        }else if(e.target.id === "dialogInp"){
+            promptInp = e.target.value;
+
+            // if(promptInp){
+            //     dialogBtn.disabled = false;
+            // }else{
+            //     dialogBtn.disabled = true;
+            // }
         }
     }
     
     const checkingBox = e => {
         editable = e.target.checked;
         if(e.target.parentNode.parentNode.parentNode.classList.contains("userEdit")){
-            activeNote(true,editable);
+            
+            editActiveNote();
+
             if(currentOpenID){
                 if(titleInput!==prevTitleInput){
                     document.querySelector(".noteMenu > input.titleBox").value = titleInput = prevTitleInput;
@@ -1824,6 +1900,39 @@ window.onload = () =>{
 
     const chkLocallySave = e => {
         saveLocalChk = e.target.checked;
+    }
+
+    const chkLocked = e => {
+        if(titleInput || bodyInput){
+            isLocked = !isLocked;
+            lockedBtn.classList.toggle("locked");
+    
+            if(isLocked){
+                let pass = window.prompt("Enter password for this lock: ");
+                isLockedPass = pass;
+            }else{
+                console.log(isLockedPass);
+                if(isLockedPass){
+                    let con = window.confirm("Are you sure you want to remove the lock?");
+
+                    if(con){
+                        isLockedPass = null;
+                    }else{
+                        isLocked = true;
+                        lockedBtn.classList.toggle("locked");
+                    }
+                }
+            }
+
+            if(isLocked && !isLockedPass){
+                window.alert("empty locked pass!");
+                isLocked = false;
+                lockedBtn.classList.toggle("locked");
+            }
+        }else{
+            window.alert("Please enter a title or a body first!");
+        }
+        
     }
 
     const focusedTT = e => {
@@ -1848,7 +1957,9 @@ window.onload = () =>{
 
     [...sectionCloseBtns, logOutBtn, userSettingsBtn, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
     [usernameInput, emailInput, passwordInput, titleBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
-    
+
+    lockedBtn.addEventListener("click", chkLocked);
+
     textBoxArea.on("text-change", (delta, old, from) => {
         if(from !== "api"){
             let val = textBoxArea.getContents();
@@ -1857,7 +1968,7 @@ window.onload = () =>{
                 val = null;
             }
 
-            console.log(val);
+            val = JSON.stringify(val);
 
             currentOpenID ? chkInputNoteUser(val, "body") : chkInputNoteDefault(addBtn, val, titleInput);
             bodyInput = val;
