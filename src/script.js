@@ -70,10 +70,7 @@ let clickedChk = false;
 let keyPress = null;
 let isSavedAlready = false;
 let promptInp = null;
-
-const terminal = (userEdit=false) => {
-    closeBtnClicked(".noteMenu",userEdit);
-}
+let promptBtnInp = null;
 
 const orderList = (whichOrder, reLoadDB = false) => {
     new Promise((resolve) => {
@@ -529,10 +526,11 @@ const saveNote = () => {
 
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
-        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, locked: isLocked, lockedPass, user, date: newDate, lastUpdated: null}, "add").finally(terminal());
+        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, locked: isLocked, lockedPass, user, date: newDate, lastUpdated: null}, "add").finally(
+            closeBtnClicked(".noteMenu",false));
     }else{
         _DATABASE.push({title: titleInput, body: bodyInput, editable, locked: isLocked, lockedPass, id, user, date: newDate, lastUpdated: null});
-        terminal();
+        closeBtnClicked(".noteMenu",false);
     }
 }
 
@@ -550,7 +548,7 @@ const editNote = () => {
             if(item.user===currentUser){
                 if(id===item.id){
                     [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
-                    terminal(true);
+                    closeBtnClicked(".noteMenu",true);
                 }
             }
         })
@@ -563,7 +561,7 @@ const editNote = () => {
                 [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
                 if(data.lastUpdated){
                     if(data.lastUpdated !== oldUpdatedDate){
-                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(terminal(true));
+                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(closeBtnClicked(".noteMenu",true));
                     }
                 }
             }
@@ -824,7 +822,7 @@ const clicked = e => {
         if(titleInput || bodyInput){
             saveNote();
         }else{
-            window.alert("Please Enter a title or a body");
+            promptHandler("alert", "Enter either a title or a body first!");
         }
     }else if(nodeClass==="editBtn"){
         editNote();
@@ -901,6 +899,81 @@ const menuToggle = (nodeClass, returnVar = true) => {
         backgroundPanelHandler(nodeClass);
         document.querySelector(nodeClass).classList.toggle("hiddenSection");
         document.querySelector(nodeClass).classList.toggle("activeSection");
+    }
+}
+
+const promptHandler = (fromWhich, text) => {
+    const dialogBox = document.querySelector("#dialogBox");
+    const dialogText = document.querySelector(".dialogText");
+    const dialogCancel = document.querySelector(".dialogCancel");
+    const dialogBtn = document.querySelector(".dialogBtn");
+    const dialogInp = document.querySelector("#dialogInp");
+
+    dialogBox.setAttribute("open","");
+    document.querySelector(".dialogBG").classList.toggle("activeSection");
+
+    if(fromWhich === "alert"){
+        dialogText.textContent = text;
+        dialogBox.classList.add("alertBox");
+        dialogCancel.textContent = "Confirm";
+        dialogCancel.addEventListener("click", promptExit);
+    }else if(fromWhich === "confirm"){
+        dialogText.textContent = text;
+        dialogBox.classList.add("confirmBox");
+        dialogBtn.removeAttribute("hidden");
+        dialogBtn.textContent = "Confirm";
+        dialogBtn.disabled = false;
+        [dialogBtn, dialogCancel].forEach(item => item.addEventListener("click", confirmDialog));
+    }else if(fromWhich === "inputPrompt"){
+        dialogText.textContent = text;
+        dialogBtn.removeAttribute("hidden");
+        dialogBtn.textContent = "Confirm";
+        dialogInp.classList.toggle("confirmActive");
+        !dialogBtn.disabled ? dialogBtn.disabled = true: "";
+        [dialogBtn, dialogCancel].forEach(item => item.addEventListener("click", confirmDialog));
+    }
+}
+
+const promptExit = () => {
+    promptInp = null;
+    promptBtnInp = null;
+    const dialogBtn = document.querySelector(".dialogBtn");
+    const dialogInp = document.querySelector("#dialogInp");
+    const dialogCancel = document.querySelector(".dialogCancel");
+    const dialogBox = document.querySelector("#dialogBox");
+
+    document.querySelector(".dialogBG").classList.toggle("activeSection");
+    if(!dialogBtn.attributes.hidden){
+        dialogBtn.setAttribute("hidden","");
+        dialogBtn.textContent = "";
+    }
+
+    if(dialogInp.classList.contains("confirmActive")){
+        dialogInp.value = "";
+        dialogInp.classList.toggle("confirmActive");
+    }
+
+    dialogCancel.textContent !== "Cancel" ? dialogCancel.textContent = "Cancel" : "";
+
+    if(dialogBox.classList.contains("alertBox")){
+        dialogCancel.removeEventListener("click",promptExit);
+        dialogBox.classList.toggle("alertBox");
+    }else if(dialogBox.classList.contains("confirmBox")){
+        [dialogBtn, dialogCancel].forEach(item => item.removeEventListener("click",confirmDialog));
+        dialogBox.classList.toggle("confirmBox");
+    }
+
+    !dialogBtn.disabled ? dialogBtn.disabled = true: "";
+    document.querySelector(".dialogText").textContent = "";
+    dialogBox.removeAttribute("open");
+}
+
+
+const confirmDialog = e => {
+    if(e.target.classList.contains("dialogBtn")){
+        promptBtnInp = "y";
+    }else{
+        promptBtnInp = "n";
     }
 }
 
@@ -1063,8 +1136,8 @@ const noteMenuPanelHandler = nodeClass => {
         }).then(noteData => {
             noteMenuUnlock(noteData).then(()=>{
                 noteMenuLoadProfile(noteData, nodeClass, locallySaveCheck, delBtn, addBtn);
-            }).catch(() => {
-                window.alert("Wrong password!");
+            }).catch(err => {
+                err ? promptHandler("alert",err) : "";
             })
         })
         
@@ -1074,13 +1147,29 @@ const noteMenuPanelHandler = nodeClass => {
 const noteMenuUnlock = data => {
     return new Promise((resolve, reject) => {
         if(data.locked){
-            let notePass = window.prompt("Enter note password here: ");
+            // let notePass = window.prompt("Enter note password here: ");
+            promptHandler("inputPrompt", "Enter note password here: ");
 
-            if(notePass === data.lockedPass){
-                resolve();
-            }else{
-                reject();
-            }
+            let promptInterval = setInterval(() => {
+                if(promptBtnInp){
+
+                    clearInterval(promptInterval);
+
+                    if(promptBtnInp === "n"){
+                        reject(null);
+                    }else{
+                        if(!promptInp){
+                            reject("Empty password!");
+                        }
+                        if(promptInp === data.lockedPass){
+                            resolve();
+                        }else{
+                            reject("Wrong password!")
+                        }
+                    }
+                    promptExit();
+                }
+            }, 100);
         }else{
             resolve();
         }
@@ -1295,40 +1384,6 @@ const activeNote = (isActive = false, fromEdit = false) => {
             document.querySelector(".noteMenu").classList.toggle("nonEditable");
         }
     }
-    // document.querySelector(".noteMenu textarea").disabled = !isActive;
-    // document.querySelector(".noteMenu .extraInput p button:first-child").disabled = !isActive;
-
-    // if(fromEdit){
-    //     if(isActive && noteMenu.classList.contains("nonEditable")){
-    //         noteMenu.classList.toggle("nonEditable");
-    //     }else if(!isActive && !noteMenu.classList.contains("nonEditable")){
-    //         noteMenu.classList.toggle("nonEditable");
-    //     }
-        
-    //     let whichKind = idStringCut(currentOpenID);
-    //     let id = Number(currentOpenID.replace(whichKind,""));
-
-    //     if(whichKind === "note"){
-    //         _DATABASE.forEach(item => {
-    //             if(item.user===currentUser){
-    //                 if(id===item.id){
-    //                     item.editable = !item.editable;
-    //                 }
-    //             }
-    //         })
-    //     }else{
-    //         local_DATABASE.forEach(item=>{
-    //             if(id===item.id){
-    //                 item.editable = !item.editable;
-    //             }
-    //         })
-    //     }
-        
-    // }else{
-    //     if(noteMenu.classList.contains("nonEditable")){
-    //         noteMenu.classList.toggle("nonEditable");
-    //     }
-    // }
 }
 
 const editActiveNote = () => {
@@ -1805,7 +1860,7 @@ window.onload = () =>{
     const sectionCloseBtns = document.querySelectorAll("section .closeBtn");
     const logOutBtn = document.querySelector(".userPanel li .logOutBtn");
     const dialogInp = document.querySelector("#dialogInp");
-    const dialogBtn = document.querySelector(".inpDiaBox > dialogBtn");
+    const dialogBtn = document.querySelector(".dialogBtnCon > .dialogBtn");
     //loginRegister
     const loginRegisterMenu = document.querySelector(".loginRegisterMenu");
     const loginMenuBtn = document.querySelector("ul .loginRegisterMenuBtn .loginBtn");
@@ -1872,11 +1927,11 @@ window.onload = () =>{
         }else if(e.target.id === "dialogInp"){
             promptInp = e.target.value;
 
-            // if(promptInp){
-            //     dialogBtn.disabled = false;
-            // }else{
-            //     dialogBtn.disabled = true;
-            // }
+            if(promptInp){
+                dialogBtn.disabled = false;
+            }else{
+                dialogBtn.disabled = true;
+            }
         }
     }
     
@@ -1908,29 +1963,65 @@ window.onload = () =>{
             lockedBtn.classList.toggle("locked");
     
             if(isLocked){
-                let pass = window.prompt("Enter password for this lock: ");
-                isLockedPass = pass;
-            }else{
-                console.log(isLockedPass);
-                if(isLockedPass){
-                    let con = window.confirm("Are you sure you want to remove the lock?");
+                // let pass = window.prompt("Enter password for this lock: ");
+                // isLockedPass = pass;
+                
+                promptHandler("inputPrompt", "Enter password for this lock: ");
 
-                    if(con){
-                        isLockedPass = null;
-                    }else{
-                        isLocked = true;
-                        lockedBtn.classList.toggle("locked");
+                let promptInterval = setInterval(() => {
+                    if(promptBtnInp){
+                        // let err = null;
+
+                        clearInterval(promptInterval);
+
+                        if(promptBtnInp === "n"){
+                            isLocked = !isLocked;
+                            lockedBtn.classList.toggle("locked");
+                        }else{
+                            if(promptInp){
+                                isLockedPass = promptInp;
+                            }
+                            // else{
+                            //     isLocked = !isLocked;
+                            //     err = "Empty password!";
+                            // }
+                        }
+
+                        // if(!isLocked){
+                        //     lockedBtn.classList.toggle("locked");
+                        //     err ? promptHandler("alert", err) : "";
+                        // }
+
+                        promptExit();
                     }
+                }, 100)
+            }else{
+                if(isLockedPass){
+                    promptHandler("confirm", "Are you sure you want to remove the lock of this note?");
+
+                    let promptInterval = setInterval(() => {
+                        if(promptBtnInp){
+                            clearInterval(promptInterval);
+                            if(promptBtnInp === 'y'){
+                                isLockedPass = null;
+                            }else{
+                                isLocked = true;
+                                lockedBtn.classList.toggle("locked");
+                            }
+                            promptExit();
+                        }
+                    }, 100);
+                    
                 }
             }
 
-            if(isLocked && !isLockedPass){
-                window.alert("empty locked pass!");
-                isLocked = false;
-                lockedBtn.classList.toggle("locked");
-            }
+            // if(isLocked && !isLockedPass){
+            //     promptHandler("alert","Lock password is empty!");
+            //     isLocked = false;
+            //     lockedBtn.classList.toggle("locked");
+            // }
         }else{
-            window.alert("Please enter a title or a body first!");
+            promptHandler("alert","Please enter a title or a body first!");
         }
         
     }
@@ -1956,7 +2047,7 @@ window.onload = () =>{
     }
 
     [...sectionCloseBtns, logOutBtn, userSettingsBtn, loginMenuBtn, registerMenuBtn, loginregisterFuncBtn, addBtn, delBtn, , sidePanelBtn, saveProfileBtn].forEach(item=>item.addEventListener("click",clicked));
-    [usernameInput, emailInput, passwordInput, titleBox, sidePanelInp].forEach(item=>item.addEventListener("input",insertInput));
+    [usernameInput, emailInput, passwordInput, titleBox, sidePanelInp, dialogInp].forEach(item=>item.addEventListener("input",insertInput));
 
     lockedBtn.addEventListener("click", chkLocked);
 
@@ -1992,11 +2083,12 @@ window.onload = () =>{
 
     window.addEventListener("click",e => {
         if(!clickedChk){
+            const bgPanel = document.querySelector(".backGroundPanel");
             let chkWhichClicked = true;
             
             [noteMenu, loginRegisterMenu, userSettings].forEach(node => {
                 if(!node.classList.contains("hiddenSection")){
-                    e.target === document.querySelector(".backGroundPanel") ? chkWhichClicked = false : "";
+                    e.target === bgPanel ? chkWhichClicked = false : "";
                 }
             })
 

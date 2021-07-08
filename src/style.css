@@ -134,10 +134,6 @@ body .backGroundPanel {
     z-index: 0;
 }
 
-.backGroundPanel.activeSection {
-    z-index: 999;
-}
-
 .pfpContainer {
     position: relative;
     background-color: rgba(255,255,255,.2);
@@ -198,7 +194,7 @@ body .backGroundPanel {
 
 #dialogBox {
     z-index: 10000000;
-    font-size: 2.5rem;
+    font-size: 2rem;
     padding: .5rem;
     position: fixed;
     height: 20rem;
@@ -211,6 +207,36 @@ body .backGroundPanel {
     text-shadow: 1px 0 1.5px rgba(0, 0, 0, .2);
 }
 
+.dialogBG {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    background-color: rgba(0,0,0,.7);
+    visibility: hidden;
+    z-index: 0;
+}
+
+.dialogBG.activeSection {
+    z-index: 9999999;
+    visibility: visible;
+}
+
+#dialogBox.alertBox {
+    border: rgba(255, 0, 0, .5) .2rem solid;
+}
+
+#dialogBox.confirmBox {
+    border: rgba(0, 255, 200, .5) .2rem solid;
+}
+
+#dialogBox.alertBox > .inpDiaBox > .dialogBtnCon > .dialogCancel {
+    box-shadow: 0 0 3px rgba(255, 0, 0, .5);
+}
+
+#dialogBox.confirmBox > .inpDiaBox > .dialogBtnCon > .dialogBtn,  #dialogBox.confirmBox > .inpDiaBox > .dialogBtnCon > .dialogCancel{
+    box-shadow: 0 0 3px rgba(0, 255, 200, .5);
+}
+
 #dialogBox > p.dialogText {
     height: 80%;
 }
@@ -219,6 +245,18 @@ body .backGroundPanel {
     height: 15%;
     width: 100%;
     justify-content: space-between;
+}
+
+div.inpDiaBox > input {
+    visibility: hidden;
+}
+
+div.inpDiaBox > input#dialogInp.confirmActive {
+    visibility: visible;
+}
+
+div.inpDiaBox > div.dialogBtnCon > button {
+    height: 100%;
 }
 
 /* main Article */
