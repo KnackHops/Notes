@@ -184,7 +184,8 @@ const logInUserValidate = (localUser = null) => {
 
                 if(!returnVar){
                     reject(returnVar);
-                    alert("Invalid username or password");
+                    // alert("Invalid username or password");
+                    promptHandler("alert","Invalid username or password")
                 }
             }).then(username=>{
                 // fetch user data for pfp and nickname
@@ -292,7 +293,8 @@ const logInUserValidate = (localUser = null) => {
                 reject(null);
             })
         }else{
-            alert("Please fill out area");
+            // alert("Please fill out area");
+            promptHandler("alert", "Please fill out area")
             reject(null);
         }
     })
@@ -355,18 +357,22 @@ const registerUserValidate = () =>{
 
     if(!userName || !userPass || !userEmail) {
         returnVar=false;
-        alert("Please fill out every textbox");
+        // alert("Please fill out every textbox");
+        promptHandler("alert", "Please fill out every textbox");
     }else{
         if(!passwordCheck(userPass)){
             returnVar=false;
-            alert("Password needs to be 6 characters or longer and have one uppercase letter");
+            // alert("Password needs to be 6 characters or longer and have one uppercase letter");
+            promptHandler("alert", "Password needs to be 6 characters or longer and have one uppercase letter");
         }else{
             if(userName ==="localUser"){
-                alert("Please pick a valid username");
+                // alert("Please pick a valid username");
+                promptHandler("alert", "Please pick a valid username")
             }else{
                 if(userName.length<=5){
                     returnVar=false;
-                    alert("Username needs to be 6 characters or longer")
+                    // alert("Username needs to be 6 characters or longer");
+                    promptHandler("alert","Username needs to be 6 characters or longer")
                 }else{
                     if(searchUserDBASE('username',userName)){
                         returnVar=false;
@@ -375,7 +381,8 @@ const registerUserValidate = () =>{
                         returnVar=false;
                     }
                     if(returnVar===false){
-                        alert("User already exist!");
+                        // alert("User already exist!");
+                        promptHandler("alert","User already exist!")
                     }
                 }
             }
@@ -432,7 +439,8 @@ const registerUser = () => {
         nickLast: dateNowGet()
     })
 
-    confirm("User Registered!");
+    // confirm("User Registered!");
+    promptHandler("confirm", "User registered!", false);
 }
 
 const userTerminal = () => {
@@ -836,9 +844,18 @@ const clicked = e => {
             closeBtnClicked("." + parent.classList[0]);
         }
     }else if(nodeClass==="delBtn"){
-        if(confirm("Are you sure?")){
-            deleteNote();
-        }
+        // if(confirm("Are you sure?")){
+        //     deleteNote();
+        // }
+        promptHandler("confirm", "Are you sure?");
+
+        let promptInterval = setInterval(() => {
+            if(promptBtnInp){
+                clearInterval(promptInterval);
+                promptBtnInp === 'y' ? deleteNote() : "";
+                promptExit();
+            }
+        }, 100)
     }else if(nodeClass==="loginregisterFuncBtn"){
         //log in button
         userTerminal();
@@ -902,7 +919,7 @@ const menuToggle = (nodeClass, returnVar = true) => {
     }
 }
 
-const promptHandler = (fromWhich, text) => {
+const promptHandler = (fromWhich, text, defaultConfirm = true) => {
     const dialogBox = document.querySelector("#dialogBox");
     const dialogText = document.querySelector(".dialogText");
     const dialogCancel = document.querySelector(".dialogCancel");
@@ -923,7 +940,15 @@ const promptHandler = (fromWhich, text) => {
         dialogBtn.removeAttribute("hidden");
         dialogBtn.textContent = "Confirm";
         dialogBtn.disabled = false;
-        [dialogBtn, dialogCancel].forEach(item => item.addEventListener("click", confirmDialog));
+        if(defaultConfirm){
+            dialogBtn.addEventListener("click", confirmDialog);
+            dialogCancel.addEventListener("click", confirmDialog);
+        }else{
+            dialogBtn.addEventListener("click", promptExit);
+            dialogCancel.disabled = true;
+            dialogCancel.setAttribute("hidden","");
+        }
+        // [dialogBtn, dialogCancel].forEach(item => item.addEventListener("click", confirmDialog));
     }else if(fromWhich === "inputPrompt"){
         dialogText.textContent = text;
         dialogBtn.removeAttribute("hidden");
@@ -953,13 +978,21 @@ const promptExit = () => {
         dialogInp.classList.toggle("confirmActive");
     }
 
+
     dialogCancel.textContent !== "Cancel" ? dialogCancel.textContent = "Cancel" : "";
 
     if(dialogBox.classList.contains("alertBox")){
         dialogCancel.removeEventListener("click",promptExit);
         dialogBox.classList.toggle("alertBox");
     }else if(dialogBox.classList.contains("confirmBox")){
-        [dialogBtn, dialogCancel].forEach(item => item.removeEventListener("click",confirmDialog));
+        if(dialogCancel.disabled){
+            dialogCancel.disabled = false;
+            dialogCancel.removeAttribute("hidden");
+            dialogBtn.removeEventListener("click", promptExit);
+        }else{
+            dialogBtn.removeEventListener("click", confirmDialog);
+            dialogCancel.removeEventListener("click", confirmDialog);
+        }
         dialogBox.classList.toggle("confirmBox");
     }
 
@@ -1534,7 +1567,8 @@ const userMobileNickHandler = () => {
             
             btnChk = returnVar;
         }else{
-            alert("empty");
+            // alert("empty");
+            promptHandler("alert","empty")
             chkChange=false;
         }
     }
@@ -1559,29 +1593,41 @@ const pfpUpload = e => {
                     pfpEditCheck(true);
                     currentFile=e.target.result;
                 }else{
-                    alert("Gif file prohibited");
+                    // alert("Gif file prohibited");
+                    promptHandler("alert","GIF file prohibited");
                 }
             }else{
-                alert("not an image");
+                // alert("not an image");
+                promptHandler("alert", "Not an image");
             }
         }
     }
 
     reader.onerror = e => {
-        alert(e.target.error);
+        // alert(e.target.error);
+        promptHandler("alert",e.target.error)
     }
 
     reader.readAsDataURL(file);
 }
 
 const pfpRemove = e => {
-    let ans;
-    e ?  ans = confirm("are you sure?") : true;
+    // e ?  ans = confirm("are you sure?") : true;
 
-    if(ans){
-        pfpChange(_DEFAULTPFP);
-        pfpEditCheck(false);
-        currentFile="default";
+    e ? (promptHandler("confirm","Are you sure?")) : "";
+
+    if(document.querySelector("#dialogBox").classList.contains("confirmBox")){
+        let promptInterval = setInterval(()=>{
+            if(promptBtnInp){
+                clearInterval(promptInterval);
+                if(promptBtnInp === 'y'){
+                    pfpChange(_DEFAULTPFP);
+                    pfpEditCheck(false);
+                    currentFile="default";
+                }
+                promptExit();
+            }
+        },100)
     }
 }
 
