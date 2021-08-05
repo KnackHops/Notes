@@ -10,7 +10,7 @@ let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]
 {title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, locked: true, lockedPass: "123", id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
 // let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
-let noteList = [];
+let noteList = null;
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
@@ -72,26 +72,21 @@ let isSavedAlready = false;
 let promptInp = null;
 let promptBtnInp = null;
 
-const orderList = (whichOrder, reLoadDB = false) => {
-    new Promise((resolve) => {
-        if(reLoadDB && whichOrder !== "Default"){
-            nodeLoad(null, true).finally(() => resolve());
-        }else{
-            resolve();
-        }
-    }).then(() => {
-        if(whichOrder==="ascendCreated"){
-            nodeLoad(ascendCreated(noteList));
-        }else if(whichOrder==="descendCreated"){
-            nodeLoad(descendCreated(noteList));
-        }else if(whichOrder==="ascendEdited"){
-            nodeLoad(ascendEdited(noteList));
-        }else if(whichOrder==="descendEdited"){
-            nodeLoad(descendEdited(noteList));
-        }else{
-            nodeLoad();
-        }
-    })
+const orderList = (whichOrder) => {
+    
+    let newNoteList = null;
+
+    if(whichOrder==="ascendCreated"){
+        newNoteList = ascendCreated(noteList);
+    }else if(whichOrder==="descendCreated"){
+        newNoteList = descendCreated(noteList);
+    }else if(whichOrder==="ascendEdited"){
+        newNoteList = ascendEdited(noteList);
+    }else if(whichOrder==="descendEdited"){
+        newNoteList = descendEdited(noteList);
+    }
+
+    newNoteList ? nodeLoad(newNoteList) : nodeLoad(noteList);
 }
 
 const ascendCreated = arrayDbase => {
@@ -168,131 +163,249 @@ const logInUserValidate = (localUser = null) => {
             // fetching login data from backend
             new Promise((resolve, reject) => {
                 let returnVar = null;
+
                 if(localUser){
-                        resolve(localUser);
-                        returnVar = true;
+                    userName = localUser;
+                    returnVar = true;
                 }else{
                     login_DATABASE.forEach(user => {
                         if(user.username === userName.toLowerCase()){
                             if(user.password === userPass){
-                                resolve(user.username);
                                 returnVar = true;
                             }
                         }
                     })
                 }
 
-                if(!returnVar){
-                    reject(returnVar);
-                    alert("Invalid username or password");
-                }
-            }).then(username=>{
-                // fetch user data for pfp and nickname
-                new Promise((resolve, reject) => {
-                    let userProfile = null;
-                    userProfileChange_DATABASE.forEach(user=>{
-                        if(username === user.username){
-                            userProfile = user;
+                if(returnVar){
+                    userProfileChange_DATABASE.forEach(user => {
+                        if(user.username === userName.toLowerCase()){
+                            resolve(user);
                         }
                     })
+                }else{
+                    reject(returnVar);
+                    // alert("Invalid username or password");
+                    promptHandler("alert","Invalid username or password")
+                }
+            }).then(({username, pfpLast, nickLast}) => {
+                indexedDBGetData(_INDEXEDSTORENAME[1], username).then(data => {
+                    if(data.target.result){
+                    // entry exists, therefore we compare dates to check if local data is updated
+                        let indexedPfpLast = data.target.result.pfpData.pfpLast;
+                        let indexedNickLast = data.target.result.nickData.nickLast;
+                        let whichUpdated = {pfp: false, nick: false};
 
-                    userProfile ? resolve(userProfile) : reject(userProfile);
-                }).then(({username, pfpLast, nickLast}) => {
-                    indexedDBGetData(_INDEXEDSTORENAME[1], username).then(data => {
-                        if(data.target.result){
-                        // entry exists, therefore we compare dates to check if local data is updated
-                            let indexedPfpLast = data.target.result.pfpData.pfpLast;
-                            let indexedNickLast = data.target.result.nickData.nickLast;
-                            let whichUpdated = {pfp: false, nick: false};
 
+                        if(totalDate(indexedPfpLast) !== totalDate(pfpLast)){
+                            whichUpdated.pfp = true;
+                        }
 
-                            if(totalDate(indexedPfpLast) !== totalDate(pfpLast)){
-                                whichUpdated.pfp = true;
-                            }
+                        if(totalDate(indexedNickLast) !== totalDate(nickLast)){
+                            whichUpdated.nick = true;
+                        }
 
-                            if(totalDate(indexedNickLast) !== totalDate(nickLast)){
-                                whichUpdated.nick = true;
-                            }
+                        if(whichUpdated.pfp === true || whichUpdated.nick === true){
+                            // update local entry is outdated
 
-                            if(whichUpdated.pfp === true || whichUpdated.nick === true){
-                                // update local entry is outdated
-
-                                new Promise((resolve) => {
-                                    userProfileChange_DATABASE.forEach(eachUserProfile =>{
-                                        if(eachUserProfile.username === username){
-                                            resolve(eachUserProfile);
-                                        }
-                                    }).then(userProfileCh => {
-                                        new Promise((resolve) => {
-                                            user_DATABASE.forEach(eachUser => {
-                                                if(eachUser.username === username){
-                                                    let updateUserProfile = {
-                                                        username,
-                                                        pfpData: {
-                                                            pfp: eachUser.pfp,
-                                                            pfpLast: userProfileCh.pfpLast
-                                                        },
-                                                        nickData: {
-                                                            nickname: eachUser.nickname,
-                                                            nickLast: userProfileCh.nickLast
-                                                        }
+                            new Promise((resolve) => {
+                                userProfileChange_DATABASE.forEach(eachUserProfile =>{
+                                    if(eachUserProfile.username === username){
+                                        resolve(eachUserProfile);
+                                    }
+                                }).then(userProfileCh => {
+                                    new Promise((resolve) => {
+                                        user_DATABASE.forEach(eachUser => {
+                                            if(eachUser.username === username){
+                                                let updateUserProfile = {
+                                                    username,
+                                                    pfpData: {
+                                                        pfp: eachUser.pfp,
+                                                        pfpLast: userProfileCh.pfpLast
+                                                    },
+                                                    nickData: {
+                                                        nickname: eachUser.nickname,
+                                                        nickLast: userProfileCh.nickLast
                                                     }
-
-                                                    resolve(updateUserProfile);
                                                 }
-                                            })
-                                        }).then(updateUserProfile => {
-                                            indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
-                                            .finally(()=>resolve(updateUserProfile));
+
+                                                resolve(updateUserProfile);
+                                            }
                                         })
+                                    }).then(updateUserProfile => {
+                                        indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
+                                        .finally(()=>resolve(updateUserProfile));
                                     })
                                 })
-                            }else{
-                                // local entry is updated
-                                resolve(data.target.result);
-                            }
+                            })
                         }else{
-                        // entry doesn't exist in the store, therefore we create it
-
-                            new Promise((resolve, reject) => {
-                                let userMobileNickname = null;
-                                user_DATABASE.forEach(eachUser => {
-                                    if(eachUser.username === username){
-                                        userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
-                                    }
-                                })
-
-                                userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
-                            }).then(({pfp, nickname}) => {
-                                let newUserProfile = {
-                                    username, 
-                                    pfpData: {
-                                        pfp,
-                                        pfpLast
-                                    },
-                                    nickData: {
-                                        nickname,
-                                        nickLast
-                                    }
-                                }
-
-                                indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
-                                    // returns newUserProfile;
-                                    resolve(newUserProfile);
-                                })
-                            });
+                            // local entry is updated
+                            resolve(data.target.result);
                         }
-                    })
-                }).catch(err => {
-                    // error if userProfile doesn't exist
-                    reject(null);
+                    }else{
+                    // entry doesn't exist in the store, therefore we create it
+
+                        new Promise((resolve, reject) => {
+                            let userMobileNickname = null;
+                            user_DATABASE.forEach(eachUser => {
+                                if(eachUser.username === username){
+                                    userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
+                                }
+                            })
+
+                            userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
+                        }).then(({pfp, nickname}) => {
+                            let newUserProfile = {
+                                username, 
+                                pfpData: {
+                                    pfp,
+                                    pfpLast
+                                },
+                                nickData: {
+                                    nickname,
+                                    nickLast
+                                }
+                            }
+
+                            indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
+                                // returns newUserProfile;
+                                resolve(newUserProfile);
+                            })
+                        });
+                    }
                 })
-            }).catch(err=>{
-                // returns null if user doesn't exist
-                reject(null);
-            })
+            }).catch(()=>reject(null))
+
+            // new Promise((resolve, reject) => {
+            //     let returnVar = false;
+            //     if(localUser){
+            //             resolve(localUser);
+            //             returnVar = true;
+            //     }else{
+            //         login_DATABASE.forEach(user => {
+            //             if(user.username === userName.toLowerCase()){
+            //                 if(user.password === userPass){
+            //                     resolve(user.username);
+            //                     returnVar = true;
+            //                 }
+            //             }
+            //         })
+            //     }
+
+            //     if(!returnVar){
+            //         reject(returnVar);
+            //         // alert("Invalid username or password");
+            //         promptHandler("alert","Invalid username or password")
+            //     }
+            // }).then(username=>{
+            //     // I could just return userProfileChange itself
+            //     // fetch user data for pfp and nickname
+            //     new Promise((resolve, reject) => {
+            //         let userProfile = null;
+            //         userProfileChange_DATABASE.forEach(user=>{
+            //             if(username === user.username){
+            //                 userProfile = user;
+            //             }
+            //         })
+
+            //         userProfile ? resolve(userProfile) : reject(userProfile);
+            //     }).then(({username, pfpLast, nickLast}) => {
+            //         indexedDBGetData(_INDEXEDSTORENAME[1], username).then(data => {
+            //             if(data.target.result){
+            //             // entry exists, therefore we compare dates to check if local data is updated
+            //                 let indexedPfpLast = data.target.result.pfpData.pfpLast;
+            //                 let indexedNickLast = data.target.result.nickData.nickLast;
+            //                 let whichUpdated = {pfp: false, nick: false};
+
+
+            //                 if(totalDate(indexedPfpLast) !== totalDate(pfpLast)){
+            //                     whichUpdated.pfp = true;
+            //                 }
+
+            //                 if(totalDate(indexedNickLast) !== totalDate(nickLast)){
+            //                     whichUpdated.nick = true;
+            //                 }
+
+            //                 if(whichUpdated.pfp === true || whichUpdated.nick === true){
+            //                     // update local entry is outdated
+
+            //                     new Promise((resolve) => {
+            //                         userProfileChange_DATABASE.forEach(eachUserProfile =>{
+            //                             if(eachUserProfile.username === username){
+            //                                 resolve(eachUserProfile);
+            //                             }
+            //                         }).then(userProfileCh => {
+            //                             new Promise((resolve) => {
+            //                                 user_DATABASE.forEach(eachUser => {
+            //                                     if(eachUser.username === username){
+            //                                         let updateUserProfile = {
+            //                                             username,
+            //                                             pfpData: {
+            //                                                 pfp: eachUser.pfp,
+            //                                                 pfpLast: userProfileCh.pfpLast
+            //                                             },
+            //                                             nickData: {
+            //                                                 nickname: eachUser.nickname,
+            //                                                 nickLast: userProfileCh.nickLast
+            //                                             }
+            //                                         }
+
+            //                                         resolve(updateUserProfile);
+            //                                     }
+            //                                 })
+            //                             }).then(updateUserProfile => {
+            //                                 indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
+            //                                 .finally(()=>resolve(updateUserProfile));
+            //                             })
+            //                         })
+            //                     })
+            //                 }else{
+            //                     // local entry is updated
+            //                     resolve(data.target.result);
+            //                 }
+            //             }else{
+            //             // entry doesn't exist in the store, therefore we create it
+
+            //                 new Promise((resolve, reject) => {
+            //                     let userMobileNickname = null;
+            //                     user_DATABASE.forEach(eachUser => {
+            //                         if(eachUser.username === username){
+            //                             userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
+            //                         }
+            //                     })
+
+            //                     userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
+            //                 }).then(({pfp, nickname}) => {
+            //                     let newUserProfile = {
+            //                         username, 
+            //                         pfpData: {
+            //                             pfp,
+            //                             pfpLast
+            //                         },
+            //                         nickData: {
+            //                             nickname,
+            //                             nickLast
+            //                         }
+            //                     }
+
+            //                     indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
+            //                         // returns newUserProfile;
+            //                         resolve(newUserProfile);
+            //                     })
+            //                 });
+            //             }
+            //         })
+            //     }).catch(err => {
+            //         // error if userProfile doesn't exist
+            //         reject(null);
+            //     })
+            // }).catch(err=>{
+            //     // returns null if user doesn't exist
+            //     reject(null);
+            // })
         }else{
-            alert("Please fill out area");
+            // alert("Please fill out area");
+            promptHandler("alert", "Please fill out area")
             reject(null);
         }
     })
@@ -355,18 +468,22 @@ const registerUserValidate = () =>{
 
     if(!userName || !userPass || !userEmail) {
         returnVar=false;
-        alert("Please fill out every textbox");
+        // alert("Please fill out every textbox");
+        promptHandler("alert", "Please fill out every textbox");
     }else{
         if(!passwordCheck(userPass)){
             returnVar=false;
-            alert("Password needs to be 6 characters or longer and have one uppercase letter");
+            // alert("Password needs to be 6 characters or longer and have one uppercase letter");
+            promptHandler("alert", "Password needs to be 6 characters or longer and have one uppercase letter");
         }else{
             if(userName ==="localUser"){
-                alert("Please pick a valid username");
+                // alert("Please pick a valid username");
+                promptHandler("alert", "Please pick a valid username")
             }else{
                 if(userName.length<=5){
                     returnVar=false;
-                    alert("Username needs to be 6 characters or longer")
+                    // alert("Username needs to be 6 characters or longer");
+                    promptHandler("alert","Username needs to be 6 characters or longer")
                 }else{
                     if(searchUserDBASE('username',userName)){
                         returnVar=false;
@@ -375,7 +492,8 @@ const registerUserValidate = () =>{
                         returnVar=false;
                     }
                     if(returnVar===false){
-                        alert("User already exist!");
+                        // alert("User already exist!");
+                        promptHandler("alert","User already exist!")
                     }
                 }
             }
@@ -432,7 +550,8 @@ const registerUser = () => {
         nickLast: dateNowGet()
     })
 
-    confirm("User Registered!");
+    // confirm("User Registered!");
+    promptHandler("confirm", "User registered!", false);
 }
 
 const userTerminal = () => {
@@ -524,13 +643,38 @@ const saveNote = () => {
     
     isSavedAlready = true;
 
+    note = {
+        title: titleInput,
+        body: bodyInput,
+        editable,
+        locked: isLocked,
+        lockedPass,
+        user,
+        date: newDate,
+        lastUpdated: null
+    }
+
     if(user === "localUser"){
         // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
-        indexedDBTerminal(_INDEXEDSTORENAME[0], {title: titleInput, body: bodyInput, editable, locked: isLocked, lockedPass, user, date: newDate, lastUpdated: null}, "add").finally(
-            closeBtnClicked(".noteMenu",false));
+        // indexedDBTerminal(_INDEXEDSTORENAME[0], note, "add").finally(
+        // closeBtnClicked(".noteMenu",false));
+        indexedDBTerminal(_INDEXEDSTORENAME[0], note, "add").then(notes => {
+            noteList = noteList.filter(note => note.user!=="localUser");
+            notes.forEach(note => {
+                noteList.push(note);
+            })
+            closeBtnClicked(".noteMenu", false);
+        })
     }else{
-        _DATABASE.push({title: titleInput, body: bodyInput, editable, locked: isLocked, lockedPass, id, user, date: newDate, lastUpdated: null});
-        closeBtnClicked(".noteMenu",false);
+        note['id'] = id
+        _DATABASE.push(note);
+        let localLists = noteList.filter(note => note.user==="localUser");
+        noteList = _DATABASE.filter(note => note.user===user);
+        localLists.forEach(note => {
+            noteList.push(note);
+        })
+        
+        closeBtnClicked(".noteMenu", false);
     }
 }
 
@@ -544,24 +688,41 @@ const editNote = () => {
     id = Number(currentOpenID.replace(whichKind,""));
 
     if(whichKind === "note"){
-        _DATABASE.forEach(item=>{
-            if(item.user===currentUser){
-                if(id===item.id){
-                    [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
-                    closeBtnClicked(".noteMenu",true);
+        new Promise((resolve) => {
+            _DATABASE.forEach(item=>{
+                if(item.user===currentUser){
+                    if(id===item.id){
+                        [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
+                        resolve(true);
+                    }
                 }
-            }
+            })
+        }).then(()=>{
+            let localLists = noteList.filter(note => note.user==="localUser");
+            noteList = _DATABASE.filter(note => note.user===currentUser);
+            localLists.forEach(note => {
+                noteList.push(note);
+            })
+            closeBtnClicked(".noteMenu", true);
         })
+        
     }else{
-        indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
-            if(data){
-                data = data.target.result;
+        indexedDBGetData(_INDEXEDSTORENAME[0], id).then(rawData=>{
+            if(rawData){
+                data = rawData.target.result;
                 
                 let oldUpdatedDate = data.lastUpdated;
                 [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
                 if(data.lastUpdated){
                     if(data.lastUpdated !== oldUpdatedDate){
-                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(closeBtnClicked(".noteMenu",true));
+                        // indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(closeBtnClicked(".noteMenu",true));
+                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(notes=>{
+                            noteList = noteList.filter(note => note.user!=="localUser");
+                            notes.forEach(note => {
+                                noteList.push(note);
+                            })
+                            closeBtnClicked(".noteMenu", true);
+                        })
                     }
                 }
             }
@@ -591,11 +752,12 @@ const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
 
 const deleteNote = () => {
     let id = currentOpenID;
+    const selectOrder = document.querySelector(".mainArticle .orderListCon select");
+    let whichOrder = selectOrder[selectOrder.selectedIndex].value;
 
-    closeBtnClicked(".noteMenu",true);
-    new Promise((resolve, reject) => {
-        if(id.indexOf("note")==0){
-            id = id.replace("note","");
+    if(id.indexOf("note")==0){
+        id = id.replace("note","");
+        new Promise((resolve) => {
             _DATABASE = _DATABASE.filter(item=>{
                 if(currentUser===item.user){
                     if(item.id!==Number(id)){
@@ -605,13 +767,26 @@ const deleteNote = () => {
                     return item;
                 }
             });
-            resolve(true);
+            resolve(_DATABASE.filter(note=> note.user === currentUser));
+        }).then(notes =>{
+                let localNoteList = noteList.filter(note => note.user === "localUser");
+                noteList = notes;
+                localNoteList.forEach(note => {
+                    noteList.push(note);
+                })
+                closeBtnClicked(".noteMenu", true);
+            } 
+        )
         }else{
             id = id.replace("localNote","");
-            // local_DATABASE = local_DATABASE.filter(item=>item.id!==Number(id));
-            indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del").finally(resolve(true));
+            indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del").then(notes=>{
+                noteList = noteList.filter(note => note.user !== "localUser");
+                notes.forEach(note => {
+                    noteList.push(note);
+                })
+                closeBtnClicked(".noteMenu", true);
+            })
         }
-    }).then(nodeLoad())
 }
 
 const createNote = (title=null, id=null, userN=null) => {
@@ -737,18 +912,17 @@ const linkCleaning = noteArr => {
     return newDelta;
 }
 
-const clearNotes = altD => {
+const clearNotes = () => {
     const lists = document.querySelectorAll(".mainArticle ul li");
-    altD ? "" : noteList = [];
 
     lists.forEach(list => {
         list.parentNode.removeChild(list);
     })
 }
 
-const nodeLoad = (altDbase = null, reload = false) => {
+const nodeLoad = (altDbase = null) => {
     return new Promise((resolve) => {
-        altDbase ? (reload ? clearNotes(false) : clearNotes(true)) : clearNotes(false);
+        clearNotes();
 
         if(altDbase){
             altDbase.forEach(({id, title, user})=>{
@@ -757,26 +931,34 @@ const nodeLoad = (altDbase = null, reload = false) => {
             createNote();
             resolve();
         }else{
-            let mainDBPromise = new Promise((resolve,reject)=>{
+            noteList ? noteList = null : "";
+            noteList = [];
+            let mainDBPromise = new Promise((resolve)=>{
                 if(_DATABASE){
-                    _DATABASE.forEach(note =>{
+                    let dbNote = [];
+                    _DATABASE.forEach(note => {
                         if(currentUser === note.user){
-                            reload ? "" :
-                            createNote(note.title, note.id, note.user);
-                            noteList.push(note);
+                            dbNote.push(note);
                         }
                     })
-                    resolve("done");
+                    resolve({note: dbNote})
                 }else{
-                    reject(null);
+                    resolve({note: null})
                 }
             })
-    
-            Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).finally(e=>{
-                reload ? "" :
+
+            Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).then(data=>{
+                data[0].value.note.forEach(note => {
+                    noteList.push(note);
+                })
+                data[1].value.note.forEach(note => {
+                    noteList.push(note);
+                })
+
+                noteList.forEach(note => {
+                    createNote(note.title, note.id, note.user);
+                })
                 createNote();
-                console.log(noteList);
-                resolve();
             })
         }
     })
@@ -836,9 +1018,18 @@ const clicked = e => {
             closeBtnClicked("." + parent.classList[0]);
         }
     }else if(nodeClass==="delBtn"){
-        if(confirm("Are you sure?")){
-            deleteNote();
-        }
+        // if(confirm("Are you sure?")){
+        //     deleteNote();
+        // }
+        promptHandler("confirm", "Are you sure?");
+
+        let promptInterval = setInterval(() => {
+            if(promptBtnInp){
+                clearInterval(promptInterval);
+                promptBtnInp === 'y' ? deleteNote() : "";
+                promptExit();
+            }
+        }, 100)
     }else if(nodeClass==="loginregisterFuncBtn"){
         //log in button
         userTerminal();
@@ -902,7 +1093,7 @@ const menuToggle = (nodeClass, returnVar = true) => {
     }
 }
 
-const promptHandler = (fromWhich, text) => {
+const promptHandler = (fromWhich, text, defaultConfirm = true) => {
     const dialogBox = document.querySelector("#dialogBox");
     const dialogText = document.querySelector(".dialogText");
     const dialogCancel = document.querySelector(".dialogCancel");
@@ -923,7 +1114,15 @@ const promptHandler = (fromWhich, text) => {
         dialogBtn.removeAttribute("hidden");
         dialogBtn.textContent = "Confirm";
         dialogBtn.disabled = false;
-        [dialogBtn, dialogCancel].forEach(item => item.addEventListener("click", confirmDialog));
+        if(defaultConfirm){
+            dialogBtn.addEventListener("click", confirmDialog);
+            dialogCancel.addEventListener("click", confirmDialog);
+        }else{
+            dialogBtn.addEventListener("click", promptExit);
+            dialogCancel.disabled = true;
+            dialogCancel.setAttribute("hidden","");
+        }
+        // [dialogBtn, dialogCancel].forEach(item => item.addEventListener("click", confirmDialog));
     }else if(fromWhich === "inputPrompt"){
         dialogText.textContent = text;
         dialogBtn.removeAttribute("hidden");
@@ -953,13 +1152,21 @@ const promptExit = () => {
         dialogInp.classList.toggle("confirmActive");
     }
 
+
     dialogCancel.textContent !== "Cancel" ? dialogCancel.textContent = "Cancel" : "";
 
     if(dialogBox.classList.contains("alertBox")){
         dialogCancel.removeEventListener("click",promptExit);
         dialogBox.classList.toggle("alertBox");
     }else if(dialogBox.classList.contains("confirmBox")){
-        [dialogBtn, dialogCancel].forEach(item => item.removeEventListener("click",confirmDialog));
+        if(dialogCancel.disabled){
+            dialogCancel.disabled = false;
+            dialogCancel.removeAttribute("hidden");
+            dialogBtn.removeEventListener("click", promptExit);
+        }else{
+            dialogBtn.removeEventListener("click", confirmDialog);
+            dialogCancel.removeEventListener("click", confirmDialog);
+        }
         dialogBox.classList.toggle("confirmBox");
     }
 
@@ -1023,16 +1230,18 @@ const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
         }
 
         if(!initialize){
+            let whichOrder = selectOrder[selectOrder.selectedIndex].value;
+
             if(currentOpenID && !isSavedAlready){
                 saveEditableAndLocked(editable, prevEditable, isLocked, prevLocked, isLockedPass).then(()=>{
                     isSavedAlready = false;
                     noteMenuLockReset();
-                    orderList(selectOrder[selectOrder.selectedIndex].value, true);
+                    orderList(whichOrder)
                 })
             }else{
                 isSavedAlready = false;
                 noteMenuLockReset();
-                orderList(selectOrder[selectOrder.selectedIndex].value, true);
+                orderList(whichOrder)
             }
         }
         activeNote();
@@ -1534,7 +1743,8 @@ const userMobileNickHandler = () => {
             
             btnChk = returnVar;
         }else{
-            alert("empty");
+            // alert("empty");
+            promptHandler("alert","empty")
             chkChange=false;
         }
     }
@@ -1559,29 +1769,41 @@ const pfpUpload = e => {
                     pfpEditCheck(true);
                     currentFile=e.target.result;
                 }else{
-                    alert("Gif file prohibited");
+                    // alert("Gif file prohibited");
+                    promptHandler("alert","GIF file prohibited");
                 }
             }else{
-                alert("not an image");
+                // alert("not an image");
+                promptHandler("alert", "Not an image");
             }
         }
     }
 
     reader.onerror = e => {
-        alert(e.target.error);
+        // alert(e.target.error);
+        promptHandler("alert",e.target.error)
     }
 
     reader.readAsDataURL(file);
 }
 
 const pfpRemove = e => {
-    let ans;
-    e ?  ans = confirm("are you sure?") : true;
+    // e ?  ans = confirm("are you sure?") : true;
 
-    if(ans){
-        pfpChange(_DEFAULTPFP);
-        pfpEditCheck(false);
-        currentFile="default";
+    e ? (promptHandler("confirm","Are you sure?")) : "";
+
+    if(document.querySelector("#dialogBox").classList.contains("confirmBox")){
+        let promptInterval = setInterval(()=>{
+            if(promptBtnInp){
+                clearInterval(promptInterval);
+                if(promptBtnInp === 'y'){
+                    pfpChange(_DEFAULTPFP);
+                    pfpEditCheck(false);
+                    currentFile="default";
+                }
+                promptExit();
+            }
+        },100)
     }
 }
 
@@ -1741,7 +1963,7 @@ const indexedDBGetDB = () => {
         }
 })}
 
-const indexedDBTerminal = (oSName ,item, transactionType) => {
+const indexedDBTerminal = (oSName, item, transactionType) => {
     return new Promise((resolve, reject) => {
         indexedDBGetDB().then(dbase => {
             if(dbase){
@@ -1749,8 +1971,9 @@ const indexedDBTerminal = (oSName ,item, transactionType) => {
                 let store = tx.objectStore(oSName);
     
                 tx.oncomplete = () => {
-                    // console.log("hey");
-                    resolve(true);
+                    indexedDBGetAllNoteOS().then(data=>{
+                        resolve(data.note)
+                    })
                 }
     
                 tx.onerror = () => {
@@ -1784,19 +2007,21 @@ const indexedDBGetAllNoteOS = () => {
         indexedDBGetDB().then(dbase=>{
             let x = 0;
             let req = dbase.transaction(_INDEXEDSTORENAME[0], 'readonly').objectStore(_INDEXEDSTORENAME[0]).openCursor();
+            let indexedNote=[];
 
             req.onsuccess = e => {
                 let cursor = e.target.result;
                 if(cursor){
-                    createNote(cursor.value.title, cursor.value.id, cursor.value.user);
-                    noteList.push(cursor.value);
+                    // createNote(cursor.value.title, cursor.value.id, cursor.value.user);
+                    // noteList.push(cursor.value);
+                    indexedNote.push(cursor.value);
                     x++;
                     cursor.continue();
                 }else{
                     if(x){
-                        resolve('done');
+                        resolve({note: indexedNote});
                     }else{
-                        resolve('none');
+                        resolve({note: null});
                     }
                 }
             }
@@ -2070,13 +2295,16 @@ window.onload = () =>{
         e.key !== "Enter" ? keyPress = e.key : "";
 
         if(e.key === "Enter" && !keyPress){
-            if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
-                loginregisterFuncBtn.click();
-            }else if(e.target === sidePanelInp){
-                sidePanelBtn.click();
+            if(document.querySelector(".dialogBG").classList.contains("activeSection")){
+                promptExit();
+            }else{
+                if(e.target === usernameInput || e.target === emailInput || e.target === passwordInput){
+                    loginregisterFuncBtn.click();
+                }else if(e.target === sidePanelInp){
+                    sidePanelBtn.click();
+                }
             }
         }
-        
     });
 
     window.addEventListener("keyup", e => e.key !== "Enter" ? keyPress = null : "");
