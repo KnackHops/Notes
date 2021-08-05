@@ -10,7 +10,7 @@ let _DATABASE=[{title: "test", body: JSON.stringify({"ops":[{"insert":"test\n"}]
 {title: "test2", body: JSON.stringify({"ops":[{"insert":"test2\n"}]}), editable: false, locked: true, lockedPass: "123", id:0, user: "barrys", date: { month: 2, day: 28, year: 2021}, lastUpdated: null}];
 
 // let local_DATABASE = [{title: "testingminefam3", body: "testingminefam3", editable: false, id:0, user: "localUser", date: { month: 2, day: 25, year: 2020}, lastUpdated: null}]
-let noteList = [];
+let noteList = null;
 let user_DATABASE=[{
     username: "affafu",
     email: "affafu@gmail.com",
@@ -72,40 +72,21 @@ let isSavedAlready = false;
 let promptInp = null;
 let promptBtnInp = null;
 
-const orderList = (whichOrder, reLoadDB = false) => {
-    new Promise((resolve) => {
-        if(reLoadDB && whichOrder !== "Default"){
-            nodeLoad(null, true).finally(() => resolve());
-        }else{
-            resolve();
-        }
-    }).then(() => {
-        if(whichOrder==="ascendCreated"){
-            nodeLoad(ascendCreated(noteList));
-        }else if(whichOrder==="descendCreated"){
-            nodeLoad(descendCreated(noteList));
-        }else if(whichOrder==="ascendEdited"){
-            nodeLoad(ascendEdited(noteList));
-        }else if(whichOrder==="descendEdited"){
-            nodeLoad(descendEdited(noteList));
-        }else{
-            nodeLoad();
-        }
-    })
-}
+const orderList = (whichOrder) => {
+    
+    let newNoteList = null;
 
-const orderList_2 = (whichOrder) => {
     if(whichOrder==="ascendCreated"){
-        nodeLoad(ascendCreated(noteList));
+        newNoteList = ascendCreated(noteList);
     }else if(whichOrder==="descendCreated"){
-        nodeLoad(descendCreated(noteList));
+        newNoteList = descendCreated(noteList);
     }else if(whichOrder==="ascendEdited"){
-        nodeLoad(ascendEdited(noteList));
+        newNoteList = ascendEdited(noteList);
     }else if(whichOrder==="descendEdited"){
-        nodeLoad(descendEdited(noteList));
-    }else{
-        nodeLoad();
+        newNoteList = descendEdited(noteList);
     }
+
+    newNoteList ? nodeLoad(newNoteList) : nodeLoad(noteList);
 }
 
 const ascendCreated = arrayDbase => {
@@ -682,15 +663,18 @@ const saveNote = () => {
             notes.forEach(note => {
                 noteList.push(note);
             })
+            closeBtnClicked(".noteMenu", false);
         })
     }else{
         note['id'] = id
         _DATABASE.push(note);
         let localLists = noteList.filter(note => note.user==="localUser");
         noteList = _DATABASE.filter(note => note.user===user);
-        localLists.forEach(note=>{
+        localLists.forEach(note => {
             noteList.push(note);
         })
+        
+        closeBtnClicked(".noteMenu", false);
     }
 }
 
@@ -704,24 +688,41 @@ const editNote = () => {
     id = Number(currentOpenID.replace(whichKind,""));
 
     if(whichKind === "note"){
-        _DATABASE.forEach(item=>{
-            if(item.user===currentUser){
-                if(id===item.id){
-                    [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
-                    closeBtnClicked(".noteMenu",true);
+        new Promise((resolve) => {
+            _DATABASE.forEach(item=>{
+                if(item.user===currentUser){
+                    if(id===item.id){
+                        [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
+                        resolve(true);
+                    }
                 }
-            }
+            })
+        }).then(()=>{
+            let localLists = noteList.filter(note => note.user==="localUser");
+            noteList = _DATABASE.filter(note => note.user===currentUser);
+            localLists.forEach(note => {
+                noteList.push(note);
+            })
+            closeBtnClicked(".noteMenu", true);
         })
+        
     }else{
-        indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data=>{
-            if(data){
-                data = data.target.result;
+        indexedDBGetData(_INDEXEDSTORENAME[0], id).then(rawData=>{
+            if(rawData){
+                data = rawData.target.result;
                 
                 let oldUpdatedDate = data.lastUpdated;
                 [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
                 if(data.lastUpdated){
                     if(data.lastUpdated !== oldUpdatedDate){
-                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(closeBtnClicked(".noteMenu",true));
+                        // indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(closeBtnClicked(".noteMenu",true));
+                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(notes=>{
+                            noteList = noteList.filter(note => note.user!=="localUser");
+                            notes.forEach(note => {
+                                noteList.push(note);
+                            })
+                            closeBtnClicked(".noteMenu", true);
+                        })
                     }
                 }
             }
@@ -751,11 +752,12 @@ const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
 
 const deleteNote = () => {
     let id = currentOpenID;
+    const selectOrder = document.querySelector(".mainArticle .orderListCon select");
+    let whichOrder = selectOrder[selectOrder.selectedIndex].value;
 
-    closeBtnClicked(".noteMenu",true);
-    new Promise((resolve, reject) => {
-        if(id.indexOf("note")==0){
-            id = id.replace("note","");
+    if(id.indexOf("note")==0){
+        id = id.replace("note","");
+        new Promise((resolve) => {
             _DATABASE = _DATABASE.filter(item=>{
                 if(currentUser===item.user){
                     if(item.id!==Number(id)){
@@ -765,13 +767,26 @@ const deleteNote = () => {
                     return item;
                 }
             });
-            resolve(true);
+            resolve(_DATABASE.filter(note=> note.user === currentUser));
+        }).then(notes =>{
+                let localNoteList = noteList.filter(note => note.user === "localUser");
+                noteList = notes;
+                localNoteList.forEach(note => {
+                    noteList.push(note);
+                })
+                closeBtnClicked(".noteMenu", true);
+            } 
+        )
         }else{
             id = id.replace("localNote","");
-            // local_DATABASE = local_DATABASE.filter(item=>item.id!==Number(id));
-            indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del").finally(resolve(true));
+            indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del").then(notes=>{
+                noteList = noteList.filter(note => note.user !== "localUser");
+                notes.forEach(note => {
+                    noteList.push(note);
+                })
+                closeBtnClicked(".noteMenu", true);
+            })
         }
-    }).then(nodeLoad())
 }
 
 const createNote = (title=null, id=null, userN=null) => {
@@ -897,18 +912,17 @@ const linkCleaning = noteArr => {
     return newDelta;
 }
 
-const clearNotes = altD => {
+const clearNotes = () => {
     const lists = document.querySelectorAll(".mainArticle ul li");
-    altD ? "" : noteList = [];
 
     lists.forEach(list => {
         list.parentNode.removeChild(list);
     })
 }
 
-const nodeLoad = (altDbase = null, reload = false) => {
+const nodeLoad = (altDbase = null) => {
     return new Promise((resolve) => {
-        altDbase ? (reload ? clearNotes(false) : clearNotes(true)) : clearNotes(false);
+        clearNotes();
 
         if(altDbase){
             altDbase.forEach(({id, title, user})=>{
@@ -917,7 +931,9 @@ const nodeLoad = (altDbase = null, reload = false) => {
             createNote();
             resolve();
         }else{
-            let mainDBPromise = new Promise((resolve, reject)=>{
+            noteList ? noteList = null : "";
+            noteList = [];
+            let mainDBPromise = new Promise((resolve)=>{
                 if(_DATABASE){
                     let dbNote = [];
                     _DATABASE.forEach(note => {
@@ -944,26 +960,6 @@ const nodeLoad = (altDbase = null, reload = false) => {
                 })
                 createNote();
             })
-            // let mainDBPromise = new Promise((resolve,reject)=>{
-            //     if(_DATABASE){
-            //         _DATABASE.forEach(note =>{
-            //             if(currentUser === note.user){
-            //                 reload ? "" :
-            //                 createNote(note.title, note.id, note.user);
-            //                 noteList.push(note);
-            //             }
-            //         })
-            //         resolve("done");
-            //     }else{
-            //         reject(null);
-            //     }
-            // })
-    
-            // Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).finally(e=>{
-            //     reload ? "" :
-            //     createNote();
-            //     resolve();
-            // })
         }
     })
 }
@@ -1240,14 +1236,12 @@ const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
                 saveEditableAndLocked(editable, prevEditable, isLocked, prevLocked, isLockedPass).then(()=>{
                     isSavedAlready = false;
                     noteMenuLockReset();
-                    // orderList(selectOrder[selectOrder.selectedIndex].value, true);
-                    orderList_2(whichOrder)
+                    orderList(whichOrder)
                 })
             }else{
                 isSavedAlready = false;
                 noteMenuLockReset();
-                // orderList(selectOrder[selectOrder.selectedIndex].value, true);
-                orderList_2(whichOrder)
+                orderList(whichOrder)
             }
         }
         activeNote();
