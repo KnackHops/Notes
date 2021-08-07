@@ -162,32 +162,75 @@ const logInUserValidate = (localUser = null) => {
         if(userName && userPass || localUser){
             // fetching login data from backend
             new Promise((resolve, reject) => {
-                let returnVar = null;
+                // let returnVar = null;
 
+                // if(localUser){
+                //     userName = localUser;
+                //     returnVar = true;
+                // }else{
+                //     login_DATABASE.forEach(user => {
+                //         if(user.username === userName.toLowerCase()){
+                //             if(user.password === userPass){
+                //                 returnVar = true;
+                //             }
+                //         }
+                //     })
+                // }
+
+                // if(returnVar){
+                //     userProfileChange_DATABASE.forEach(user => {
+                //         if(user.username === userName.toLowerCase()){
+                //             resolve(user);
+                //         }
+                //     })
+                // }else{
+                //     reject(returnVar);
+                //     // alert("Invalid username or password");
+                //     promptHandler("alert","Invalid username or password")
+                // }
                 if(localUser){
-                    userName = localUser;
-                    returnVar = true;
-                }else{
-                    login_DATABASE.forEach(user => {
-                        if(user.username === userName.toLowerCase()){
-                            if(user.password === userPass){
-                                returnVar = true;
-                            }
+                    fetch('http://127.0.0.1:5000/user/profile-date-get', {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: localUser
+                        })
+                    })
+                    .then(resp => {
+                        if(resp.ok){
+                            return resp.json();
+                        }else{
+                            throw resp;
                         }
                     })
+                    .then(userProfileGet =>resolve(userProfileGet))
+                    .catch(errData => errData.json().then(({errorMessage}) =>reject({errorMessage})))
+                }else{
+                    fetch('http://127.0.0.1:5000/user/login', {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: userName,
+                            password: userPass
+                        })
+                    })
+                    .then(resp=>{
+                        if(resp.ok){
+                            return resp.json();
+                        }else{
+                            throw resp;
+                        }
+                    })
+                    .then(userProfileDate => resolve(userProfileDate))
+                    .catch(errData => errData.json().then(({errorMessage})=>reject(errorMessage)))
                 }
 
-                if(returnVar){
-                    userProfileChange_DATABASE.forEach(user => {
-                        if(user.username === userName.toLowerCase()){
-                            resolve(user);
-                        }
-                    })
-                }else{
-                    reject(returnVar);
-                    // alert("Invalid username or password");
-                    promptHandler("alert","Invalid username or password")
-                }
             }).then(({username, pfpLast, nickLast}) => {
                 indexedDBGetData(_INDEXEDSTORENAME[1], username).then(data => {
                     if(data.target.result){
@@ -207,56 +250,117 @@ const logInUserValidate = (localUser = null) => {
 
                         if(whichUpdated.pfp === true || whichUpdated.nick === true){
                             // update local entry is outdated
+                            // new Promise((resolve) => {
+                            //     userProfileChange_DATABASE.forEach(eachUserProfile =>{
+                            //         if(eachUserProfile.username === username){
+                            //             resolve(eachUserProfile);
+                            //         }
+                            //     }).then(userProfileCh => {
+                            //         new Promise((resolve) => {
+                            //             user_DATABASE.forEach(eachUser => {
+                            //                 if(eachUser.username === username){
+                            //                     let updateUserProfile = {
+                            //                         username,
+                            //                         pfpData: {
+                            //                             pfp: eachUser.pfp,
+                            //                             pfpLast: userProfileCh.pfpLast
+                            //                         },
+                            //                         nickData: {
+                            //                             nickname: eachUser.nickname,
+                            //                             nickLast: userProfileCh.nickLast
+                            //                         }
+                            //                     }
 
-                            new Promise((resolve) => {
-                                userProfileChange_DATABASE.forEach(eachUserProfile =>{
-                                    if(eachUserProfile.username === username){
-                                        resolve(eachUserProfile);
-                                    }
-                                }).then(userProfileCh => {
-                                    new Promise((resolve) => {
-                                        user_DATABASE.forEach(eachUser => {
-                                            if(eachUser.username === username){
-                                                let updateUserProfile = {
-                                                    username,
-                                                    pfpData: {
-                                                        pfp: eachUser.pfp,
-                                                        pfpLast: userProfileCh.pfpLast
-                                                    },
-                                                    nickData: {
-                                                        nickname: eachUser.nickname,
-                                                        nickLast: userProfileCh.nickLast
-                                                    }
-                                                }
+                            //                     resolve(updateUserProfile);
+                            //                 }
+                            //             })
+                            //         }).then(updateUserProfile => {
+                            //             indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
+                            //             .finally(()=>resolve(updateUserProfile));
+                            //         })
+                            //     })
+                            // })
+                            // new Promise((resolve) => {
+                            //     user_DATABASE.forEach(eachUser => {
+                            //         if(eachUser.username === username){
+                            //             let updateUserProfile = {
+                            //                 username,
+                            //                 pfpData: {
+                            //                     pfp: eachUser.pfp,
+                            //                     pfpLast
+                            //                 },
+                            //                 nickData: {
+                            //                     nickname: eachUser.nickname,
+                            //                     nickLast
+                            //                 }
+                            //             }
 
-                                                resolve(updateUserProfile);
-                                            }
-                                        })
-                                    }).then(updateUserProfile => {
-                                        indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
-                                        .finally(()=>resolve(updateUserProfile));
-                                    })
-                                })
+                            //             resolve(updateUserProfile);
+                            //         }
+                            //     })
+                            // }).then(updateUserProfile => {
+                            //     indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
+                            //     .finally(()=>resolve(updateUserProfile));
+                            // })
+
+                            fetch('http://127.0.0.1:5000/user/profile-get',{
+                                method: 'POST',
+                                mode: 'cors',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({username})
                             })
+                            .then(resp => {
+                                if(resp.ok){
+                                    return resp.json()
+                                }else{
+                                    throw resp;
+                                }
+                            })
+                            .then(user => {
+                                if('errorMessage' in user){
+                                    reject(user.errorMessage);
+                                }else{
+                                    let updateUserProfile = {
+                                        username,
+                                        pfpData: {
+                                            pfp: user.username,
+                                            pfpLast
+                                        },
+                                        nickData: {
+                                            nickname: user.nickname,
+                                            nickLast
+                                        }
+                                    }
+                                    resolve(updateUserProfile);
+                                }
+                            })
+                            .catch(errData => errData.json().then(({errorMessage})=>reject(errorMessage)))
                         }else{
                             // local entry is updated
                             resolve(data.target.result);
                         }
                     }else{
                     // entry doesn't exist in the store, therefore we create it
-
-                        new Promise((resolve, reject) => {
-                            let userMobileNickname = null;
-                            user_DATABASE.forEach(eachUser => {
-                                if(eachUser.username === username){
-                                    userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
-                                }
-                            })
-
-                            userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
-                        }).then(({pfp, nickname}) => {
+                        fetch('http://127.0.0.1:5000/user/profile-get',{
+                            method: 'POST',
+                            mode: 'cors',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({username})
+                        })
+                        .then(resp => {
+                            if(resp.ok){
+                                return resp.json();
+                            }else{
+                                throw resp;
+                            }
+                        })
+                        .then(({pfp, nickname}) => {
                             let newUserProfile = {
-                                username, 
+                                username,
                                 pfpData: {
                                     pfp,
                                     pfpLast
@@ -267,147 +371,49 @@ const logInUserValidate = (localUser = null) => {
                                 }
                             }
 
-                            indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
-                                // returns newUserProfile;
+                            indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, 'add').finally(()=>{
                                 resolve(newUserProfile);
                             })
-                        });
+                        }).catch(errData=>errData.json().then(({errorMessage})=>reject(errorMessage)))
+
+                        // new Promise((resolve, reject) => {
+                        //     let userMobileNickname = null;
+                        //     user_DATABASE.forEach(eachUser => {
+                        //         if(eachUser.username === username){
+                        //             userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
+                        //         }
+                        //     })
+
+                        //     userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
+                        // }).then(({pfp, nickname}) => {
+                        //     let newUserProfile = {
+                        //         username, 
+                        //         pfpData: {
+                        //             pfp,
+                        //             pfpLast
+                        //         },
+                        //         nickData: {
+                        //             nickname,
+                        //             nickLast
+                        //         }
+                        //     }
+
+                        //     indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
+                        //         // returns newUserProfile;
+                        //         resolve(newUserProfile);
+                        //     })
+                        // });
                     }
                 })
-            }).catch(()=>reject(null))
-
-            // new Promise((resolve, reject) => {
-            //     let returnVar = false;
-            //     if(localUser){
-            //             resolve(localUser);
-            //             returnVar = true;
-            //     }else{
-            //         login_DATABASE.forEach(user => {
-            //             if(user.username === userName.toLowerCase()){
-            //                 if(user.password === userPass){
-            //                     resolve(user.username);
-            //                     returnVar = true;
-            //                 }
-            //             }
-            //         })
-            //     }
-
-            //     if(!returnVar){
-            //         reject(returnVar);
-            //         // alert("Invalid username or password");
-            //         promptHandler("alert","Invalid username or password")
-            //     }
-            // }).then(username=>{
-            //     // I could just return userProfileChange itself
-            //     // fetch user data for pfp and nickname
-            //     new Promise((resolve, reject) => {
-            //         let userProfile = null;
-            //         userProfileChange_DATABASE.forEach(user=>{
-            //             if(username === user.username){
-            //                 userProfile = user;
-            //             }
-            //         })
-
-            //         userProfile ? resolve(userProfile) : reject(userProfile);
-            //     }).then(({username, pfpLast, nickLast}) => {
-            //         indexedDBGetData(_INDEXEDSTORENAME[1], username).then(data => {
-            //             if(data.target.result){
-            //             // entry exists, therefore we compare dates to check if local data is updated
-            //                 let indexedPfpLast = data.target.result.pfpData.pfpLast;
-            //                 let indexedNickLast = data.target.result.nickData.nickLast;
-            //                 let whichUpdated = {pfp: false, nick: false};
-
-
-            //                 if(totalDate(indexedPfpLast) !== totalDate(pfpLast)){
-            //                     whichUpdated.pfp = true;
-            //                 }
-
-            //                 if(totalDate(indexedNickLast) !== totalDate(nickLast)){
-            //                     whichUpdated.nick = true;
-            //                 }
-
-            //                 if(whichUpdated.pfp === true || whichUpdated.nick === true){
-            //                     // update local entry is outdated
-
-            //                     new Promise((resolve) => {
-            //                         userProfileChange_DATABASE.forEach(eachUserProfile =>{
-            //                             if(eachUserProfile.username === username){
-            //                                 resolve(eachUserProfile);
-            //                             }
-            //                         }).then(userProfileCh => {
-            //                             new Promise((resolve) => {
-            //                                 user_DATABASE.forEach(eachUser => {
-            //                                     if(eachUser.username === username){
-            //                                         let updateUserProfile = {
-            //                                             username,
-            //                                             pfpData: {
-            //                                                 pfp: eachUser.pfp,
-            //                                                 pfpLast: userProfileCh.pfpLast
-            //                                             },
-            //                                             nickData: {
-            //                                                 nickname: eachUser.nickname,
-            //                                                 nickLast: userProfileCh.nickLast
-            //                                             }
-            //                                         }
-
-            //                                         resolve(updateUserProfile);
-            //                                     }
-            //                                 })
-            //                             }).then(updateUserProfile => {
-            //                                 indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
-            //                                 .finally(()=>resolve(updateUserProfile));
-            //                             })
-            //                         })
-            //                     })
-            //                 }else{
-            //                     // local entry is updated
-            //                     resolve(data.target.result);
-            //                 }
-            //             }else{
-            //             // entry doesn't exist in the store, therefore we create it
-
-            //                 new Promise((resolve, reject) => {
-            //                     let userMobileNickname = null;
-            //                     user_DATABASE.forEach(eachUser => {
-            //                         if(eachUser.username === username){
-            //                             userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
-            //                         }
-            //                     })
-
-            //                     userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
-            //                 }).then(({pfp, nickname}) => {
-            //                     let newUserProfile = {
-            //                         username, 
-            //                         pfpData: {
-            //                             pfp,
-            //                             pfpLast
-            //                         },
-            //                         nickData: {
-            //                             nickname,
-            //                             nickLast
-            //                         }
-            //                     }
-
-            //                     indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
-            //                         // returns newUserProfile;
-            //                         resolve(newUserProfile);
-            //                     })
-            //                 });
-            //             }
-            //         })
-            //     }).catch(err => {
-            //         // error if userProfile doesn't exist
-            //         reject(null);
-            //     })
-            // }).catch(err=>{
-            //     // returns null if user doesn't exist
-            //     reject(null);
-            // })
+            }).catch(err=>{
+                reject(err)
+            })
         }else{
             // alert("Please fill out area");
-            promptHandler("alert", "Please fill out area")
-            reject(null);
+            reject("Please fill out area");
         }
+    }).catch(err=>{
+        promptHandler("alert", err)
     })
 }
 
@@ -531,6 +537,16 @@ const passwordCheck = pass => {
 }
 
 const registerUser = () => {
+    fetch('',{
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Content-Type': 'application/json'
+        }, body: JSON.stringify({
+            username: userName.toLowerCase(),
+            password: userPass
+        })
+    }).then()
     let newUser = {
         username: userName.toLowerCase(),
         email: userEmail,
@@ -603,7 +619,7 @@ const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prev
                     data.locked = isLockedChk;
                     data.lockedPass = lockedPassVal;
             
-                    indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(()=>resolve()).catch(() => {
+                    indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(()=>resolve(true)).catch(() => {
                         console.log("Error saving editable/locked");
                         resolve();
                     })
@@ -752,8 +768,6 @@ const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
 
 const deleteNote = () => {
     let id = currentOpenID;
-    const selectOrder = document.querySelector(".mainArticle .orderListCon select");
-    let whichOrder = selectOrder[selectOrder.selectedIndex].value;
 
     if(id.indexOf("note")==0){
         id = id.replace("note","");
@@ -1664,24 +1678,55 @@ const saveProfile = () => {
     //checks if currentFile was changed
     //currentFile by default is null
     //currentFile having a value other than null means it was changed
-    if(currentFile){
-        currentFile === "default" ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentFile);
-        updateUserDBASE(currentUser,'pfp',currentFile);
-    }
-    currentFile=null;
-    
-    if(userNickName){
-        panelBtnChange(userNickName);
-    }else{
-        panelBtnChange(currentUser);
-    }
+    let user = {username: currentUser};
+    // if(currentFile){
+    //     // updateUserDBASE(currentUser,'pfp',currentFile);
+    //     user['pfp'] = currentFile;
+    // }
+
+    changedSettingsChk[_CHANGESETPROP[0]] ? (user['pfp'] = currentFile, user['pfpLast'] = dateNowGet()) : "";
+    changedSettingsChk[_CHANGESETPROP[1]] ? (user['nickname'] = userNickName, user['nickLast'] = dateNowGet()) : "";
+    changedSettingsChk[_CHANGESETPROP[2]] ? user['mobile'] = userMobile : "";
 
     _CHANGESETPROP.forEach(item => changedSettingsChk[item] ? changedSettingsChk[item] = false : "");
-    
-    updateUserDBASE(currentUser,'nickname',userNickName);
-    updateUserDBASE(currentUser,'mobile',userMobile);
 
-    closeBtnClicked(".userSettings");
+    // updateUserDBASE(currentUser,'nickname',userNickName);
+    // updateUserDBASE(currentUser,'mobile',userMobile);
+
+    if('pfp' in user || 'nickname' in user || 'mobile' in user){
+        fetch('http://127.0.0.1:5000/user/profile-save', {
+            method: 'PUT',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({user})
+        })
+        .then(resp => {
+            if(resp.ok){
+                if(userNickName){
+                    panelBtnChange(userNickName);
+                }else{
+                    panelBtnChange(currentUser);
+                }
+                if(currentFile){
+                    currentFile === "default" ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentFile);
+                }
+                closeBtnClicked(".userSettings");
+            }else{
+                throw resp;
+            }
+        })
+        .catch(errData=>errData.json().then(({errorMessage})=>promptHandler('alert',errorMessage)))
+        .finally(()=>{
+            currentFile=null;
+        })
+    }else{
+        currentFile=null;
+        closeBtnClicked(".userSettings");
+    }
+    // closeBtnClicked(".userSettings");
+
 }
 
 const saveProfileBtnChk = (chkDisable, currentChange=null) =>{
@@ -1971,13 +2016,15 @@ const indexedDBTerminal = (oSName, item, transactionType) => {
                 let store = tx.objectStore(oSName);
     
                 tx.oncomplete = () => {
-                    indexedDBGetAllNoteOS().then(data=>{
-                        resolve(data.note)
-                    })
+                    if(oSName===_INDEXEDSTORENAME[0]){
+                        indexedDBGetAllNoteOS().then(data=>{resolve(data.note)})
+                    }else{
+                        resolve(true);
+                    }
+                    
                 }
     
                 tx.onerror = () => {
-                    
                     // console.log("nop");
                     reject(false);
                 }
@@ -2348,4 +2395,34 @@ window.onload = () =>{
     indexedDBGetDB();
 
     checkLoggedAccount();
+    // let dont = true;
+    // if(dont){
+    //     fetch('http://127.0.0.1:5000/user/login', {
+    //         method: 'POST',
+    //         mode: 'cors',
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         },
+    //         body: JSON.stringify({
+    //             username: 'affafu',
+    //             password: 'affafuPass'
+    //         })
+    //     })
+    //     .then(resp=>{
+    //         if(resp.ok){
+    //             return resp.json();
+    //         }else{
+    //             throw resp;
+    //         }
+
+    //         // return(resp.json());
+    //     })
+    //     .then(data=>{
+    //         console.log(data);
+    //     }).catch(err=> {
+    //         err.json().then(errorMessage => {
+    //             console.log(errorMessage)
+    //         })
+    //     })
+    // }
 }
