@@ -482,7 +482,7 @@ const registerUserValidate = () =>{
             // alert("Password needs to be 6 characters or longer and have one uppercase letter");
             promptHandler("alert", "Password needs to be 6 characters or longer and have one uppercase letter");
         }else{
-            if(userName ==="localUser"){
+            if(userName === "localUser"){
                 // alert("Please pick a valid username");
                 promptHandler("alert", "Please pick a valid username")
             }else{
@@ -490,18 +490,19 @@ const registerUserValidate = () =>{
                     returnVar=false;
                     // alert("Username needs to be 6 characters or longer");
                     promptHandler("alert","Username needs to be 6 characters or longer")
-                }else{
-                    if(searchUserDBASE('username',userName)){
-                        returnVar=false;
-                    }
-                    if(searchUserDBASE('email',userEmail)){
-                        returnVar=false;
-                    }
-                    if(returnVar===false){
-                        // alert("User already exist!");
-                        promptHandler("alert","User already exist!")
-                    }
                 }
+                // else{
+                //     if(searchUserDBASE('username',userName)){
+                //         returnVar=false;
+                //     }
+                //     if(searchUserDBASE('email',userEmail)){
+                //         returnVar=false;
+                //     }
+                //     if(returnVar===false){
+                //         // alert("User already exist!");
+                //         promptHandler("alert","User already exist!")
+                //     }
+                // }
             }
         }
     }
@@ -536,38 +537,43 @@ const passwordCheck = pass => {
     return returnVar;
 }
 
-const registerUser = () => {
-    fetch('',{
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-            'Content-Type': 'application/json'
-        }, body: JSON.stringify({
-            username: userName.toLowerCase(),
-            password: userPass
+const registerUser = user => {
+    return new Promise((resolve, reject) => {
+        fetch('http://127.0.0.1:5000/user/register',{
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json'
+            }, body: JSON.stringify(user)
         })
-    }).then()
-    let newUser = {
-        username: userName.toLowerCase(),
-        email: userEmail,
-        pfp: "default",
-        nickname: null
-    }
-
-    user_DATABASE.push(newUser);
-    login_DATABASE.push({
-        username: userName.toLowerCase(),
-        password: userPass
+        .then(resp=>{
+            if(resp.ok){
+                resolve();
+            }else{
+                throw resp;
+            }
+        })
+        .catch(errData=>errData.json().then(({errorMessage})=>reject(errorMessage)))
     })
+    
+    // let newUser = {
+    //     username: userName.toLowerCase(),
+    //     email: userEmail,
+    //     pfp: "default",
+    //     nickname: null
+    // }
 
-    userProfileChange_DATABASE.push({
-        username: userName.toLowerCase(),
-        pfpLast: dateNowGet(),
-        nickLast: dateNowGet()
-    })
+    // user_DATABASE.push(newUser);
+    // login_DATABASE.push({
+    //     username: userName.toLowerCase(),
+    //     password: userPass
+    // })
 
-    // confirm("User Registered!");
-    promptHandler("confirm", "User registered!", false);
+    // userProfileChange_DATABASE.push({
+    //     username: userName.toLowerCase(),
+    //     pfpLast: dateNowGet(),
+    //     nickLast: dateNowGet()
+    // })
 }
 
 const userTerminal = () => {
@@ -583,8 +589,36 @@ const userTerminal = () => {
         });
     }else{
         if(registerUserValidate()){
-            registerUser();
-            closeBtnClicked(".loginRegisterMenu");
+            const username = userName.toLowerCase()
+            date = dateNowGet();
+
+            user = {
+                login_data: {
+                    username,
+                    password: userPass
+                },
+                user_data: {
+                    username,
+                    email: userEmail,
+                    mobile: null,
+                    pfp: 'default',
+                    nickname: null
+                },
+                profile_data: {
+                    username,
+                    pfpLast: date,
+                    nickLast: date
+                }
+            }
+
+            registerUser(user)
+            .then(()=>{
+                promptHandler("confirm", "User registered!", false);
+                closeBtnClicked(".loginRegisterMenu");
+            }).catch(err=>{
+                promptHandler('alert', err);
+                clearInputs(".loginRegisterMenu");
+            })
         }else{
             clearInputs(".loginRegisterMenu");
         }
@@ -1700,7 +1734,7 @@ const saveProfile = () => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({user})
+            body: JSON.stringify(user)
         })
         .then(resp => {
             if(resp.ok){
