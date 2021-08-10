@@ -249,60 +249,6 @@ const logInUserValidate = (localUser = null) => {
                         }
 
                         if(whichUpdated.pfp === true || whichUpdated.nick === true){
-                            // update local entry is outdated
-                            // new Promise((resolve) => {
-                            //     userProfileChange_DATABASE.forEach(eachUserProfile =>{
-                            //         if(eachUserProfile.username === username){
-                            //             resolve(eachUserProfile);
-                            //         }
-                            //     }).then(userProfileCh => {
-                            //         new Promise((resolve) => {
-                            //             user_DATABASE.forEach(eachUser => {
-                            //                 if(eachUser.username === username){
-                            //                     let updateUserProfile = {
-                            //                         username,
-                            //                         pfpData: {
-                            //                             pfp: eachUser.pfp,
-                            //                             pfpLast: userProfileCh.pfpLast
-                            //                         },
-                            //                         nickData: {
-                            //                             nickname: eachUser.nickname,
-                            //                             nickLast: userProfileCh.nickLast
-                            //                         }
-                            //                     }
-
-                            //                     resolve(updateUserProfile);
-                            //                 }
-                            //             })
-                            //         }).then(updateUserProfile => {
-                            //             indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
-                            //             .finally(()=>resolve(updateUserProfile));
-                            //         })
-                            //     })
-                            // })
-                            // new Promise((resolve) => {
-                            //     user_DATABASE.forEach(eachUser => {
-                            //         if(eachUser.username === username){
-                            //             let updateUserProfile = {
-                            //                 username,
-                            //                 pfpData: {
-                            //                     pfp: eachUser.pfp,
-                            //                     pfpLast
-                            //                 },
-                            //                 nickData: {
-                            //                     nickname: eachUser.nickname,
-                            //                     nickLast
-                            //                 }
-                            //             }
-
-                            //             resolve(updateUserProfile);
-                            //         }
-                            //     })
-                            // }).then(updateUserProfile => {
-                            //     indexedDBTerminal(_INDEXEDSTORENAME[1], updateUserProfile, "edit")
-                            //     .finally(()=>resolve(updateUserProfile));
-                            // })
-
                             fetch('http://127.0.0.1:5000/user/profile-get',{
                                 method: 'POST',
                                 mode: 'cors',
@@ -318,20 +264,22 @@ const logInUserValidate = (localUser = null) => {
                                     throw resp;
                                 }
                             })
-                            .then(user => {
+                            .then(({pfp, nickname, email, mobile}) => {
                                 if('errorMessage' in user){
                                     reject(user.errorMessage);
                                 }else{
                                     let updateUserProfile = {
                                         username,
                                         pfpData: {
-                                            pfp: user.username,
+                                            pfp,
                                             pfpLast
                                         },
                                         nickData: {
-                                            nickname: user.nickname,
+                                            nickname,
                                             nickLast
-                                        }
+                                        },
+                                        mobile,
+                                        email
                                     }
                                     resolve(updateUserProfile);
                                 }
@@ -358,7 +306,8 @@ const logInUserValidate = (localUser = null) => {
                                 throw resp;
                             }
                         })
-                        .then(({pfp, nickname}) => {
+                        .then(({pfp, nickname, email, mobile}) => {
+                            console.log(email)
                             let newUserProfile = {
                                 username,
                                 pfpData: {
@@ -368,41 +317,15 @@ const logInUserValidate = (localUser = null) => {
                                 nickData: {
                                     nickname,
                                     nickLast
-                                }
+                                },
+                                mobile,
+                                email
                             }
 
                             indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, 'add').finally(()=>{
                                 resolve(newUserProfile);
                             })
                         }).catch(errData=>errData.json().then(({errorMessage})=>reject(errorMessage)))
-
-                        // new Promise((resolve, reject) => {
-                        //     let userMobileNickname = null;
-                        //     user_DATABASE.forEach(eachUser => {
-                        //         if(eachUser.username === username){
-                        //             userMobileNickname = {pfp: eachUser.pfp, nickname: eachUser.nickname};
-                        //         }
-                        //     })
-
-                        //     userMobileNickname ? resolve(userMobileNickname) : reject(userMobileNickname);
-                        // }).then(({pfp, nickname}) => {
-                        //     let newUserProfile = {
-                        //         username, 
-                        //         pfpData: {
-                        //             pfp,
-                        //             pfpLast
-                        //         },
-                        //         nickData: {
-                        //             nickname,
-                        //             nickLast
-                        //         }
-                        //     }
-
-                        //     indexedDBTerminal(_INDEXEDSTORENAME[1], newUserProfile, "add").finally(() => {
-                        //         // returns newUserProfile;
-                        //         resolve(newUserProfile);
-                        //     })
-                        // });
                     }
                 })
             }).catch(err=>{
@@ -412,8 +335,6 @@ const logInUserValidate = (localUser = null) => {
             // alert("Please fill out area");
             reject("Please fill out area");
         }
-    }).catch(err=>{
-        promptHandler("alert", err)
     })
 }
 
@@ -425,7 +346,7 @@ const userCache = username => {
     })
 }
 
-const userLogInOut = (user = null, loggingIn) => {
+const userLogInOut = loggingIn => {
     const btn1 = document.querySelector(".loginBtn");
     const btn2 = document.querySelector(".loginRegisterMenuBtn:nth-child(2) button");
     const userPanel = document.querySelector("nav .userPanel");
@@ -453,9 +374,9 @@ const userLogInOut = (user = null, loggingIn) => {
         imgCon.appendChild(imgIn);
         userNavBtns.appendChild(imgCon);
 
-        user.nickData.nickname ? panelBtnChange(user.nickData.nickname) : panelBtnChange(currentUser);
+        currentUser.nickData.nickname ? panelBtnChange(currentUser.nickData.nickname) : panelBtnChange(currentUser.username);
 
-        user.pfpData.pfp === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(user.pfpData.pfp);
+        currentUser.pfpData.pfp === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentUser.pfpData.pfp);
     }else{
         const imgCon = document.querySelector(".pfpContainer.nonProfilePfp");
         const imgIn = document.querySelector(".pfpContainer.nonProfilePfp .pfp");
@@ -491,18 +412,6 @@ const registerUserValidate = () =>{
                     // alert("Username needs to be 6 characters or longer");
                     promptHandler("alert","Username needs to be 6 characters or longer")
                 }
-                // else{
-                //     if(searchUserDBASE('username',userName)){
-                //         returnVar=false;
-                //     }
-                //     if(searchUserDBASE('email',userEmail)){
-                //         returnVar=false;
-                //     }
-                //     if(returnVar===false){
-                //         // alert("User already exist!");
-                //         promptHandler("alert","User already exist!")
-                //     }
-                // }
             }
         }
     }
@@ -579,12 +488,14 @@ const registerUser = user => {
 const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
         logInUserValidate().then(userResp => {
-            currentUser = userResp.username;
+            console.log(userResp)
+            currentUser = userResp;
             accountLogged(true);
-            userLogInOut(userResp, true);
+            userLogInOut(true);
             closeBtnClicked(".loginRegisterMenu");
         }).catch(errResp => {
-            currentUser = errResp;
+            promptHandler("alert", errResp)
+            currentUser = null;
             clearInputs(".loginRegisterMenu");
         });
     }else{
@@ -645,6 +556,7 @@ const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prev
                         item.locked = isLockedChk;
                     }
                 })
+                
                 resolve();
             }else{
                 indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data => {
@@ -672,10 +584,10 @@ const saveNote = () => {
     let user;
 
     if(currentUser && !saveLocalChk){
-        user = currentUser;
+        user = currentUser.username;
 
         _DATABASE.forEach(item=>{
-            if(item.user===currentUser){
+            if(item.user===currentUser.username){
                 id=item.id;
             }
         })
@@ -740,7 +652,7 @@ const editNote = () => {
     if(whichKind === "note"){
         new Promise((resolve) => {
             _DATABASE.forEach(item=>{
-                if(item.user===currentUser){
+                if(item.user===currentUser.username){
                     if(id===item.id){
                         [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
                         resolve(true);
@@ -749,7 +661,7 @@ const editNote = () => {
             })
         }).then(()=>{
             let localLists = noteList.filter(note => note.user==="localUser");
-            noteList = _DATABASE.filter(note => note.user===currentUser);
+            noteList = _DATABASE.filter(note => note.user===currentUser.username);
             localLists.forEach(note => {
                 noteList.push(note);
             })
@@ -807,7 +719,7 @@ const deleteNote = () => {
         id = id.replace("note","");
         new Promise((resolve) => {
             _DATABASE = _DATABASE.filter(item=>{
-                if(currentUser===item.user){
+                if(currentUser.username === item.user){
                     if(item.id!==Number(id)){
                         return item;
                     }
@@ -815,7 +727,7 @@ const deleteNote = () => {
                     return item;
                 }
             });
-            resolve(_DATABASE.filter(note=> note.user === currentUser));
+            resolve(_DATABASE.filter(note=> note.user === currentUser.username));
         }).then(notes =>{
                 let localNoteList = noteList.filter(note => note.user === "localUser");
                 noteList = notes;
@@ -897,7 +809,7 @@ const noteBodyPreview = (rawId, handlerFunc) => {
     let newDelta = {ops: []};
     let noteParti, userVal = "localUser";
 
-    whichKind === "note" ? userVal = currentUser : "";
+    whichKind === "note" ? userVal = currentUser.username : "";
 
     noteParti = noteList.filter(note => note.user === userVal && note.id === id);
 
@@ -981,27 +893,61 @@ const nodeLoad = (altDbase = null) => {
         }else{
             noteList ? noteList = null : "";
             noteList = [];
-            let mainDBPromise = new Promise((resolve)=>{
-                if(_DATABASE){
-                    let dbNote = [];
-                    _DATABASE.forEach(note => {
-                        if(currentUser === note.user){
-                            dbNote.push(note);
+            // let mainDBPromise = new Promise((resolve)=>{
+            //     if(_DATABASE){
+            //         let dbNote = [];
+            //         _DATABASE.forEach(note => {
+            //             if(currentUser === note.user){
+            //                 dbNote.push(note);
+            //             }
+            //         })
+            //         resolve({note: dbNote})
+            //     }else{
+            //         resolve({note: null})
+            //     }
+            // })
+
+            let mainDBPromise = new Promise((resolve, reject) => {
+                if(currentUser){
+                    fetch('http://127.0.0.1:5000/fetch-all', {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user: currentUser.username
+                        })
+                    })
+                    .then(resp=>{
+                        if(resp.ok){
+                            return resp.json()
+                        }else{
+                            throw resp
                         }
                     })
-                    resolve({note: dbNote})
+                    .then((data) => {
+                        resolve(data)
+                    })
+                    .catch(errData=>errData.json().then(({errorMessage})=>reject(errorMessage)))
                 }else{
                     resolve({note: null})
                 }
             })
 
             Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).then(data=>{
-                data[0].value.note.forEach(note => {
-                    noteList.push(note);
-                })
-                data[1].value.note.forEach(note => {
-                    noteList.push(note);
-                })
+                if(data[0].value.note !== null){
+                    data[0].value.note.forEach(note => {
+                        noteList.push(note);
+                    })
+                }
+                
+                if(data[1].value.note){
+                    data[1].value.note.forEach(note => {
+                        noteList.push(note);
+                    })
+                }
+                
 
                 noteList.forEach(note => {
                     createNote(note.title, note.id, note.user);
@@ -1379,7 +1325,7 @@ const noteMenuPanelHandler = nodeClass => {
 
             noteList.forEach(note => {
                 if(whichKind === "note" && note.user !== "localUser"){
-                    if(currentUser === note.user){
+                    if(currentUser.username === note.user){
                         if(id === note.id){
                             resolve(note);
                         }
@@ -1394,7 +1340,7 @@ const noteMenuPanelHandler = nodeClass => {
             noteMenuUnlock(noteData).then(()=>{
                 noteMenuLoadProfile(noteData, nodeClass, locallySaveCheck, delBtn, addBtn);
             }).catch(err => {
-                err ? promptHandler("alert",err) : "";
+                err ? promptHandler("alert", err) : "";
             })
         })
         
@@ -1493,14 +1439,12 @@ const noteMenuLoadProfile = (data, nodeClass, locallySaveCheck, delBtn, addBtn) 
 
 const userSettingsPanelHandler = nodeClass => {
     const sidePanelControl = document.querySelector(".sidePanelControl");
-    const userObj = searchUserDBASE('username',currentUser,'nickname','pfp');
-    const emailNumObj = searchUserDBASE('username', currentUser, 'email', 'mobile');
 
-    if(userObj['pfp'] === "default"){
+    if(currentUser.pfpData.pfp === "default"){
         pfpChange(_DEFAULTPFP);
         pfpEditCheck(false);
     }else{
-        pfpChange(userObj['pfp']);
+        pfpChange(currentUser.pfpData.pfp);
         pfpEditCheck(true);
     }
 
@@ -1510,10 +1454,10 @@ const userSettingsPanelHandler = nodeClass => {
             item.childNodes[1].addEventListener("click",clicked);
             item.childNodes[1].disabled=false;
             i === 0 ? 
-            (userObj.nickname ? item.childNodes[1].textContent = userNickName = _userNickName = userObj.nickname : "") : 
-            (emailNumObj.mobile ? item.childNodes[1].textContent = userMobile = _userMobile = emailNumObj.mobile : "" );
+            (currentUser.nickData.nickname ? item.childNodes[1].textContent = userNickName = _userNickName = currentUser.nickData.nickname : "") : 
+            (currentUser.mobile ? item.childNodes[1].textContent = userMobile = _userMobile = currentUser.mobile : "" );
         }else{
-            item.childNodes[1].textContent = userEditEmail = emailNumObj.email;
+            item.childNodes[1].textContent = userEditEmail = currentUser.email;
         }
         
     })
@@ -1687,14 +1631,12 @@ const userPanelBtn = (varBool, [btn1, btn2]) => {
 }
 
 const checkLoggedAccount = () => {
-    let user;
     if(localStorage.getItem(_USERLOGGEDKEY)){
         let localUsername = localStorage.getItem(_USERLOGGEDKEY);
         logInUserValidate(localUsername).then(userResp => {
-            currentUser = localUsername;
-            user = userResp;
+            currentUser = userResp;
             accountLogged(true);
-            userLogInOut(user, true);
+            userLogInOut(true);
         }).catch(() => {
             accountLogged(false);
             nodeLoad().then(() => console.log("notes loaded"));
@@ -1705,14 +1647,14 @@ const checkLoggedAccount = () => {
 }
 
 const accountLogged = isLogged => {
-    isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser) : localStorage.removeItem(_USERLOGGEDKEY);
+    isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser.username) : localStorage.removeItem(_USERLOGGEDKEY);
 }
 
 const saveProfile = () => {
     //checks if currentFile was changed
     //currentFile by default is null
     //currentFile having a value other than null means it was changed
-    let user = {username: currentUser};
+    let user = {username: currentUser.username};
     // if(currentFile){
     //     // updateUserDBASE(currentUser,'pfp',currentFile);
     //     user['pfp'] = currentFile;
@@ -1741,7 +1683,7 @@ const saveProfile = () => {
                 if(userNickName){
                     panelBtnChange(userNickName);
                 }else{
-                    panelBtnChange(currentUser);
+                    panelBtnChange(currentUser.username);
                 }
                 if(currentFile){
                     currentFile === "default" ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentFile);
@@ -1902,19 +1844,15 @@ const pfpEditCheck = userPfpEditable => {
 const pfpChange = newPfP => {
     document.querySelector(".userSettings .pfpContainer .pfp").src=newPfP;
     let chkToDisable;
-    user_DATABASE.forEach(user=>{
-        if(user.username===currentUser){
-            if(user.pfp!==newPfP){
-                if(user.pfp==="default" && newPfP===_DEFAULTPFP){
-                    chkToDisable = true;
-                }else{
-                    chkToDisable = false;
-                }
-            }else{
-                chkToDisable = true;
-            }
+    if(currentUser.pfpData.pfp !== newPfP){
+        if(currentUser.pfpData.pfp === "default" && newPfP ===_DEFAULTPFP){
+            chkToDisable = true;
+        }else{
+            chkToDisable = false;
         }
-    })
+    }else{
+        chkToDisable = true;
+    }
 
     
     saveProfileBtnChk(chkToDisable, 'userPfpChk');
@@ -2272,7 +2210,7 @@ window.onload = () =>{
                 // let pass = window.prompt("Enter password for this lock: ");
                 // isLockedPass = pass;
                 
-                promptHandler("inputPrompt", "Enter password for this lock: ");
+                promptHandler("inputPrompt", "Enter 4 characters password for this lock! Don't put password from other site!");
 
                 let promptInterval = setInterval(() => {
                     if(promptBtnInp){
@@ -2281,11 +2219,18 @@ window.onload = () =>{
                         clearInterval(promptInterval);
 
                         if(promptBtnInp === "n"){
+                            promptExit();
                             isLocked = !isLocked;
                             lockedBtn.classList.toggle("locked");
                         }else{
-                            if(promptInp){
+                            if(promptInp.length === 4){
                                 isLockedPass = promptInp;
+                                promptExit();
+                            }else{
+                                promptExit();
+                                isLocked = !isLocked;
+                                lockedBtn.classList.toggle("locked");
+                                promptHandler('alert', 'Please enter 4 characters for the password');
                             }
                             // else{
                             //     isLocked = !isLocked;
@@ -2297,8 +2242,6 @@ window.onload = () =>{
                         //     lockedBtn.classList.toggle("locked");
                         //     err ? promptHandler("alert", err) : "";
                         // }
-
-                        promptExit();
                     }
                 }, 100)
             }else{
@@ -2431,32 +2374,26 @@ window.onload = () =>{
     checkLoggedAccount();
     // let dont = true;
     // if(dont){
-    //     fetch('http://127.0.0.1:5000/user/login', {
+    //     fetch('http://127.0.0.1:5000/fetch-all', {
     //         method: 'POST',
     //         mode: 'cors',
     //         headers: {
     //             'Content-Type': 'application/json'
     //         },
     //         body: JSON.stringify({
-    //             username: 'affafu',
-    //             password: 'affafuPass'
+    //             user: 'affafu'
     //         })
     //     })
     //     .then(resp=>{
     //         if(resp.ok){
-    //             return resp.json();
+    //             return resp.json()
     //         }else{
-    //             throw resp;
+    //             throw resp
     //         }
-
-    //         // return(resp.json());
     //     })
-    //     .then(data=>{
-    //         console.log(data);
-    //     }).catch(err=> {
-    //         err.json().then(errorMessage => {
-    //             console.log(errorMessage)
-    //         })
+    //     .then(({note}) => {
+    //         console.log(note)
     //     })
+    //     .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
     // }
 }
