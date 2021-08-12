@@ -162,32 +162,6 @@ const logInUserValidate = (localUser = null) => {
         if(userName && userPass || localUser){
             // fetching login data from backend
             new Promise((resolve, reject) => {
-                // let returnVar = null;
-
-                // if(localUser){
-                //     userName = localUser;
-                //     returnVar = true;
-                // }else{
-                //     login_DATABASE.forEach(user => {
-                //         if(user.username === userName.toLowerCase()){
-                //             if(user.password === userPass){
-                //                 returnVar = true;
-                //             }
-                //         }
-                //     })
-                // }
-
-                // if(returnVar){
-                //     userProfileChange_DATABASE.forEach(user => {
-                //         if(user.username === userName.toLowerCase()){
-                //             resolve(user);
-                //         }
-                //     })
-                // }else{
-                //     reject(returnVar);
-                //     // alert("Invalid username or password");
-                //     promptHandler("alert","Invalid username or password")
-                // }
                 if(localUser){
                     fetch('http://127.0.0.1:5000/user/profile-date-get', {
                         method: 'POST',
@@ -464,25 +438,6 @@ const registerUser = user => {
         })
         .catch(errData=>errData.json().then(({errorMessage})=>reject(errorMessage)))
     })
-    
-    // let newUser = {
-    //     username: userName.toLowerCase(),
-    //     email: userEmail,
-    //     pfp: "default",
-    //     nickname: null
-    // }
-
-    // user_DATABASE.push(newUser);
-    // login_DATABASE.push({
-    //     username: userName.toLowerCase(),
-    //     password: userPass
-    // })
-
-    // userProfileChange_DATABASE.push({
-    //     username: userName.toLowerCase(),
-    //     pfpLast: dateNowGet(),
-    //     nickLast: dateNowGet()
-    // })
 }
 
 const userTerminal = () => {
@@ -545,30 +500,63 @@ const idStringCut = str => {
 const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prevLockedChk, lockedPassVal) => {
     return new Promise ((resolve) => {
         if(isEditableChk !== prevEditableChk || isLockedChk !== prevLockedChk){
-            console.log(isEditableChk, prevEditableChk, isLockedChk, prevLockedChk);
             let whichKind = idStringCut(currentOpenID);
             let id = Number(currentOpenID.replace(whichKind,""));
         
             if(whichKind === "note"){
-                _DATABASE.forEach(item => {
-                    if(item.id === id){
-                        item.editable = isEditableChk;
-                        item.locked = isLockedChk;
+                fetch('http://127.0.0.1:5000/update-edit-lock',
+                {
+                    method: 'PUT',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user: currentUser.username,
+                        id: id,
+                        editable: isEditableChk,
+                        locked: isLockedChk,
+                        lockedPass: lockedPassVal
+                    })
+                })
+                .then(resp => {
+                    if(resp.ok){
+                        return resp.json()
+                    }else{
+                        throw resp
                     }
                 })
-                
-                resolve();
+                .then(()=>{
+                    noteList.forEach(note => {
+                        if(note.id === id && note.user !== 'localUser'){
+                            note.editable === isEditableChk ? "" : note.editable = isEditableChk;
+                            note.locked === isLockedChk ? "" : (note.locked = isLockedChk, note.lockedPass = isLockedPass);
+                        }
+                    })
+                })
+                .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
+                .finally(()=>resolve())
             }else{
                 indexedDBGetData(_INDEXEDSTORENAME[0], id).then(data => {
-                    data = data.target.result;
-                    data.editable = isEditableChk;
-                    data.locked = isLockedChk;
-                    data.lockedPass = lockedPassVal;
+                    note = data.target.result;
+                    note.editable = isEditableChk;
+                    note.locked = isLockedChk;
+                    note.lockedPass = lockedPassVal;
             
-                    indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(()=>resolve(true)).catch(() => {
+                    indexedDBTerminal(_INDEXEDSTORENAME[0], note, "edit")
+                    .then(()=>{
+                        noteList.forEach(note => {
+                            if(note.id === id && note.user === 'localUser'){
+                                note.editable === isEditableChk ? "" : note.editable = isEditableChk;
+                                note.locked === isLockedChk ? "" : (note.locked = isLockedChk, note.lockedPass = isLockedPass);
+                            }
+                        })
+                    })
+                    .catch(() => {
                         console.log("Error saving editable/locked");
                         resolve();
                     })
+                    .finally(()=>resolve())
                 })
              }
         }else{
@@ -578,27 +566,15 @@ const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prev
 }
 
 const saveNote = () => {
-    let id = null;
+    // let id = null;
     let lockedPass = null;
     let newDate = dateNowGet();
     let user;
 
     if(currentUser && !saveLocalChk){
         user = currentUser.username;
-
-        _DATABASE.forEach(item=>{
-            if(item.user===currentUser.username){
-                id=item.id;
-            }
-        })
     }else{
         user = "localUser";
-    }
-
-    if(id || id===0){
-        id+=1;
-    }else{
-        id=0;
     }
 
     isLocked ? lockedPass = isLockedPass : null;
@@ -617,9 +593,6 @@ const saveNote = () => {
     }
 
     if(user === "localUser"){
-        // local_DATABASE.push({title: titleInput, body: bodyInput, editable, id, user, date: newDate});
-        // indexedDBTerminal(_INDEXEDSTORENAME[0], note, "add").finally(
-        // closeBtnClicked(".noteMenu",false));
         indexedDBTerminal(_INDEXEDSTORENAME[0], note, "add").then(notes => {
             noteList = noteList.filter(note => note.user!=="localUser");
             notes.forEach(note => {
@@ -628,15 +601,27 @@ const saveNote = () => {
             closeBtnClicked(".noteMenu", false);
         })
     }else{
-        note['id'] = id
-        _DATABASE.push(note);
-        let localLists = noteList.filter(note => note.user==="localUser");
-        noteList = _DATABASE.filter(note => note.user===user);
-        localLists.forEach(note => {
+        fetch('http://127.0.0.1:5000/save', {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(note)
+        })
+        .then(resp => {
+            if(resp.ok){
+                return resp.json();
+            }else{
+                throw resp;
+            }
+        })
+        .then(({id}) => {
+            note['id'] = id
             noteList.push(note);
         })
-        
-        closeBtnClicked(".noteMenu", false);
+        .catch(errData => errData.json().then(({errorMessage})=>promptHandler('alert', errorMessage)))
+        .finally(()=>closeBtnClicked(".noteMenu", false))
     }
 }
 
@@ -645,50 +630,67 @@ const editNote = () => {
     let id = currentOpenID;
     let titleInputVal = titleInput;
     let bodyInputVal = bodyInput;
+    let title, body, lastUpdated;
     let whichKind = idStringCut(id);
 
     id = Number(currentOpenID.replace(whichKind,""));
 
-    if(whichKind === "note"){
-        new Promise((resolve) => {
-            _DATABASE.forEach(item=>{
-                if(item.user===currentUser.username){
-                    if(id===item.id){
-                        [item.title, item.body, item.lastUpdated] = editAndCheck(item.title, item.body, titleInputVal, bodyInputVal);
-                        resolve(true);
+    noteList.forEach(note => {
+        if(whichKind === 'note' && note.user !== 'localUser'){
+            if(note.id === id){
+                [title, body, lastUpdated] = editAndCheck(note.title, note.body, titleInputVal, bodyInputVal);
+                fetch('http://127.0.0.1:5000/edit',{
+                    method: 'PUT',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user: currentUser.username,
+                        id,
+                        title,
+                        body,
+                        lastUpdated
+                    })
+                })
+                .then(resp => {
+                    if(resp.ok){
+                        note.title = title;
+                        note.body = body;
+                        note.lastUpdated = lastUpdated;
+                        resolve();
+                    }else{
+                        throw resp;
                     }
-                }
-            })
-        }).then(()=>{
-            let localLists = noteList.filter(note => note.user==="localUser");
-            noteList = _DATABASE.filter(note => note.user===currentUser.username);
-            localLists.forEach(note => {
-                noteList.push(note);
-            })
-            closeBtnClicked(".noteMenu", true);
-        })
-        
-    }else{
-        indexedDBGetData(_INDEXEDSTORENAME[0], id).then(rawData=>{
-            if(rawData){
-                data = rawData.target.result;
-                
-                let oldUpdatedDate = data.lastUpdated;
-                [data.title, data.body, data.lastUpdated] = editAndCheck(data.title, data.body, titleInputVal, bodyInputVal);
-                if(data.lastUpdated){
-                    if(data.lastUpdated !== oldUpdatedDate){
-                        // indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").finally(closeBtnClicked(".noteMenu",true));
-                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, "edit").then(notes=>{
-                            noteList = noteList.filter(note => note.user!=="localUser");
-                            notes.forEach(note => {
-                                noteList.push(note);
-                            })
-                            closeBtnClicked(".noteMenu", true);
-                        })
-                    }
-                }
+                })
+                .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
+                .finally(()=>closeBtnClicked('.noteMenu', true))
             }
-        })
+        }else{
+            if(note.id === id && note.user === 'localUser'){
+                [title, body, lastUpdated] = editAndCheck(note.title, note.body, titleInputVal, bodyInputVal);
+                indexedDBGetData(_INDEXEDSTORENAME[0], id).then(rawData => {
+                    if(rawData){
+                        data = rawData.target.result;
+                        data.title = title;
+                        data.body = body;
+                        lastUpdated = lastUpdated;
+                        indexedDBTerminal(_INDEXEDSTORENAME[0], data, 'edit')
+                        .then(() => {
+                            note.title = title;
+                            note.body = body;
+                            note.lastUpdated = lastUpdated;
+                            resolve();
+                        })
+                        .finally(()=>closeBtnClicked('.noteMenu', true))
+                    }
+                })
+            }
+        }
+    })
+
+    if(!lastUpdated){
+        closeBtnClicked('.noteMenu', true)
     }
 }
 
@@ -716,37 +718,43 @@ const deleteNote = () => {
     let id = currentOpenID;
 
     if(id.indexOf("note")==0){
-        id = id.replace("note","");
-        new Promise((resolve) => {
-            _DATABASE = _DATABASE.filter(item=>{
-                if(currentUser.username === item.user){
-                    if(item.id!==Number(id)){
-                        return item;
+        id = Number(id.replace("note",""));
+        fetch(`http://127.0.0.1:5000/delete?id=${id}&user=${currentUser.username}`,{
+            method: 'DELETE',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(resp=>{
+            if(resp.ok){
+                noteList = noteList.filter(note=>{
+                    console.log(note.id === id);
+                    if(note.user !== currentUser.username){
+                        return true;
+                    }else{
+                        if(note.id !== id){
+                            return true;
+                        }else{
+                            return false;
+                        }
                     }
-                }else {
-                    return item;
-                }
-            });
-            resolve(_DATABASE.filter(note=> note.user === currentUser.username));
-        }).then(notes =>{
-                let localNoteList = noteList.filter(note => note.user === "localUser");
-                noteList = notes;
-                localNoteList.forEach(note => {
-                    noteList.push(note);
-                })
-                closeBtnClicked(".noteMenu", true);
-            } 
-        )
-        }else{
-            id = id.replace("localNote","");
-            indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del").then(notes=>{
-                noteList = noteList.filter(note => note.user !== "localUser");
-                notes.forEach(note => {
-                    noteList.push(note);
-                })
-                closeBtnClicked(".noteMenu", true);
-            })
-        }
+                });
+                console.log(noteList)
+            }else{
+                throw resp;
+            }
+        })
+        .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
+        .finally(()=>closeBtnClicked('.noteMenu', true))
+    }else{
+        id = id.replace("localNote","");
+        indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del")
+        .then(()=>{
+            noteList = noteList.filter(note=>note.id !== id && note.user !== 'localUser');
+        })
+        .finally(()=>closeBtnClicked('.noteMenu', true))
+    }
 }
 
 const createNote = (title=null, id=null, userN=null) => {
@@ -893,19 +901,6 @@ const nodeLoad = (altDbase = null) => {
         }else{
             noteList ? noteList = null : "";
             noteList = [];
-            // let mainDBPromise = new Promise((resolve)=>{
-            //     if(_DATABASE){
-            //         let dbNote = [];
-            //         _DATABASE.forEach(note => {
-            //             if(currentUser === note.user){
-            //                 dbNote.push(note);
-            //             }
-            //         })
-            //         resolve({note: dbNote})
-            //     }else{
-            //         resolve({note: null})
-            //     }
-            // })
 
             let mainDBPromise = new Promise((resolve, reject) => {
                 if(currentUser){
@@ -931,19 +926,19 @@ const nodeLoad = (altDbase = null) => {
                     })
                     .catch(errData=>errData.json().then(({errorMessage})=>reject(errorMessage)))
                 }else{
-                    resolve({note: null})
+                    resolve({notes: null})
                 }
             })
 
             Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).then(data=>{
-                if(data[0].value.note !== null){
-                    data[0].value.note.forEach(note => {
+                if(data[0].value.notes !== null){
+                    data[0].value.notes.forEach(note => {
                         noteList.push(note);
                     })
                 }
                 
-                if(data[1].value.note){
-                    data[1].value.note.forEach(note => {
+                if(data[1].value.notes){
+                    data[1].value.notes.forEach(note => {
                         noteList.push(note);
                     })
                 }
@@ -1989,7 +1984,7 @@ const indexedDBTerminal = (oSName, item, transactionType) => {
     
                 tx.oncomplete = () => {
                     if(oSName===_INDEXEDSTORENAME[0]){
-                        indexedDBGetAllNoteOS().then(data=>{resolve(data.note)})
+                        indexedDBGetAllNoteOS().then(data=>{resolve(data.notes)})
                     }else{
                         resolve(true);
                     }
@@ -2038,9 +2033,9 @@ const indexedDBGetAllNoteOS = () => {
                     cursor.continue();
                 }else{
                     if(x){
-                        resolve({note: indexedNote});
+                        resolve({notes: indexedNote});
                     }else{
-                        resolve({note: null});
+                        resolve({notes: null});
                     }
                 }
             }
