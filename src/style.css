@@ -2,7 +2,8 @@
     box-sizing: border-box;
 }
 
-* {
+* {    
+    font-family: 'Amatic SC', sans-serif;
     margin: 0;
     padding: 0;
 }
@@ -17,7 +18,7 @@ html,body {
 }
 
 .fdFlow {
-    flex-flow: column wrap;
+    flex-flow: column nowrap;
 }
 
 .txtCen {
@@ -28,10 +29,15 @@ body {
     position: relative;
 }
 
+h1, h3, .titleBox {
+    font-family: 'Pacifico', cursive, sans-serif;
+    font-weight: 100;
+}
+
 /* header css */
 header {
     padding: .5rem 1rem;
-    background-color: rgba(100,0,0,.5);
+    background-color: rgba(127, 177, 127);
     flex: 0;
     flex-flow: row wrap;
     justify-content: space-between;
@@ -39,6 +45,14 @@ header {
 
 header div h1 {
     font-size: 4.5rem;
+    color: wheat;
+    text-shadow: .1rem .1rem .4rem black;
+    font-weight: 100;
+    padding: 0 1.5rem .75rem 1.5rem;
+    border-top: .75rem cadetblue solid;
+    border-right: .25rem cadetblue solid;
+    border-radius: 2rem;
+    box-shadow: .1rem -.07rem .1rem white;
 }
 
 nav {
@@ -62,10 +76,15 @@ header ul {
 nav > .userPanel {
     align-items: center;
     position: fixed;
-    background-color: rgba(0,0,0,.5);
+    background-color: cadetblue;
+    border: .25rem solid wheat;
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    border-top-left-radius: 1rem;
+    box-shadow: .1rem .3rem .5rem black;
     padding: .5rem 0;
     width: 8.5rem;
-    top: 4.4rem;
+    top: 7rem;
     right: -20rem;
     opacity: 0;
 }
@@ -77,14 +96,14 @@ nav > .userPanel {
 nav > .userPanel.panelInactive {
     z-index: 0;
     right: 1rem;
-    transform: translateY(2rem);
+    transform: translateY(1rem);
 }
 
 nav > .userPanel.panelActive {
     z-index: 7;
     opacity: 1;
     right: 1rem;
-    transform: translateY(4rem);
+    transform: translateY(2rem);
 }
 
 nav > .userPanel.panelInactive > li button {
@@ -93,22 +112,26 @@ nav > .userPanel.panelInactive > li button {
 
 nav > .userPanel li {
     margin: .1rem 0;
-    width: 8rem;
+    width: 100%;
 }
 
 nav > .userPanel li button {
     border-radius: .5rem;
     border: none;
     outline: none;
-    color: white;
-    box-shadow: .2px 1px 5px white;
-    background-color: rgba(255,255,255,.2);
-    width: 100%;
+    color: black;
+    background-color: white;
+    padding: .25rem 0;
+    margin: .25rem 2%;
+    width: 95%;
+    /* font-weight: 500; */
+    text-shadow: .1rem .1rem .1rem wheat;
 }
 
 nav .userPanel li button:hover {
-    background-color: white;
-    color: black;
+    background-color: rgba(127, 177, 127);
+    color: wheat;
+    text-shadow: .1rem .1rem .1rem black;
 }
 
 header ul li button {
@@ -134,10 +157,16 @@ body .backGroundPanel {
     z-index: 0;
 }
 
+body .backGroundPanel.activeSection {
+    z-index: 998;
+}
+
 .pfpContainer {
     position: relative;
-    background-color: rgba(255,255,255,.2);
-    border-radius: 50%;
+    /* background-color: rgba(255,255,255,.2); */
+    background-color: wheat;
+    border-radius: 60%;
+    box-shadow: 0 -.2rem 1.25rem black;
 }
 
 .pfpContainer.pfpClickable {
@@ -150,28 +179,38 @@ body .backGroundPanel {
     height: 100%;
     width: 100%;
     border-radius: 50%;
-    background-color: rgba(255,255,255,.2);
+    background-color: rgba(0,0,0,.5);
 }
 
 .userSettings p .pfpContainer.pfpClickable:hover:after{
     position: absolute;
     content: "x";
-    top: 5%;
+    top: 25%;
     left: 5%;
     height: 90%;
     width: 90%;
     border-radius: 50%;
-    font-size: 5rem;
+    font-size: 3rem;
     text-align: center;
 }
 
+.userSettings > p > span.pfpContainer {
+    background: wheat;
+}
 
-.pfp {
-    object-fit: cover;
+.userSettings > p > span.pfpContainer .pfp {
     margin-top: 5%;
     margin-left: 5%;
     height: 90%;
     width: 90%;
+}
+
+.pfp {
+    object-fit: cover;
+    margin-top: 4%;
+    margin-left: 4%;
+    height: 91%;
+    width: 91%;
     border-radius: 50%;
     font-size: 20px;
 }
@@ -190,6 +229,51 @@ body .backGroundPanel {
     display: flex;
     flex-flow: column-reverse;
     align-items: center;
+}
+
+li.loginRegisterMenuBtn:nth-child(1) {
+    margin-right: .35rem;
+}
+
+ul.loggedInUL > li.loginRegisterMenuBtn {
+    width: 100%;
+}
+
+li.loginRegisterMenuBtn > button {
+    margin-top: .5rem;
+    width: 100%;
+    outline: none;
+    border: none;
+    background: none;
+    font-size: 1.5rem;
+    border: .3rem cadetblue solid;
+    border-radius: .6rem;
+    font-weight: 600;
+    color: wheat;
+    text-shadow: .1rem .1rem .4rem black;
+    box-shadow: .1rem .2rem .4rem black;
+    transition: all .2s;
+}
+
+li.loginRegisterMenuBtn > button:hover {
+    border: .2rem wheat solid;
+    padding: .2rem;
+    border-radius: 0;
+    color: white;
+}
+
+li.loginRegisterMenuBtn > button:active {
+    box-shadow: .1rem .2rem .4rem white;
+    color: black;
+    text-shadow: white;
+}
+
+ul.loggedInUL > li.loginRegisterMenuBtn > button.userPanelBtn.panelIsOpen {
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom: none;
+    padding-bottom: .6rem;
+    border-color: wheat;
 }
 
 #dialogBox {
@@ -283,6 +367,7 @@ div.inpDiaBox > div.dialogBtnCon > button {
 .mainArticle > .mainList > li > h3 {
     padding: .25rem .5rem;
     font-size: 2.5rem;
+    font-weight: 100;
     background-color: rgba(0,100,0,.5);
     cursor: pointer;
 }
@@ -300,10 +385,17 @@ li > .noteCloseContainer {
 .noteCloseContainer > .noteCloseBtn {
     cursor: pointer;
     outline: none;
-    border: 1px solid rgba(0, 0, 0, .2);
+    border: .1px solid rgba(0, 0, 0, .2);
     padding: 0 .5rem;
     background: none;
     margin-bottom: .5rem;
+}
+
+.noteCloseContainer > .noteCloseBtn:hover {
+    background: teal;
+    color: white;
+    border-color: white;
+    box-shadow: 0 .1rem .3rem black;
 }
 
 input, .bodyBox {
@@ -311,11 +403,12 @@ input, .bodyBox {
 }
 
 input {
+    outline: none;
     padding: 0 .25rem;
 }
 
 input:hover, .bodyBox:hover {
-    box-shadow: .05rem .1rem .5rem blanchedalmond;
+    box-shadow: 0 .1rem .3rem wheat;
 }
 
 input:disabled:hover, .bodyBox.bodyBox.ql-disabled:hover {
@@ -323,17 +416,22 @@ input:disabled:hover, .bodyBox.bodyBox.ql-disabled:hover {
 }
 
 /* sections */
-body .loginRegisterMenu, body .noteMenu, body .userSettings {
+body > .loginRegisterMenu, body > .noteMenu, body > .userSettings {
     position: fixed;
-    background-color: rgba(0,0,0,.7);
+    background-color: teal;
+    box-shadow: 0 .1rem .4rem black;
     color: white;
+}
+
+body > .userSettings > div.sidePanelControl > p > button, .userSettings p, body > .loginRegisterMenu, .noteMenu > .extraInput {
+    text-shadow: 0 .1rem .4rem black;
 }
 
 body .loginRegisterMenu {
     padding: 1rem 2rem;
     height: 15rem;
     width: 40rem;
-    top: calc(30% - 7.5rem);
+    top: calc(35% - 7.5rem);
     left: calc(50% - 20rem);
 }
 
@@ -372,7 +470,6 @@ section label, section .bodyBox, section input {
     font-size: 2.25rem;
 }
 
-
 .hiddenSection {
     z-index: 0;
     visibility: hidden;
@@ -386,7 +483,38 @@ button.hiddenSection {
     width: 0;
 }
 
+.userSettings > p.saveProfileBtnCon > .saveProfileBtn, .userSidePanel > p.fd > .sidePanelBtn, .noteMenu > .extraInput > p > button, .loginRegisterMenu > p:last-child > button {
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    border: .2rem solid cadetblue;
+    text-shadow: 0 .1rem .2rem black;
+    box-shadow: 0 .1rem .4rem black;
+    padding: .1rem 1rem;
+    color: wheat;
+    border-radius: 1rem;
+    background: #7fb17f;
+}
+
+p.saveProfileBtnCon > .saveProfileBtn:hover, .userSidePanel > p > .sidePanelBtn:hover, .noteMenu > .extraInput > p > button:hover, .loginRegisterMenu > p:last-child > button:hover {
+    border: .2rem solid wheat;
+    color: black;
+    text-shadow: none;
+}
+
+.userSettings > p.saveProfileBtnCon > .saveProfileBtn:disabled, .userSidePanel > p.fd > .sidePanelBtn:disabled, .noteMenu > .extraInput > p > button:disabled, .loginRegisterMenu > p:last-child > button:disabled {
+    background-color: gray;
+    border-color: gray;
+    color: white;
+    text-shadow: none;
+    cursor: not-allowed;
+}
+
+
 /* closeBtn for sections */
+.closeBtn {
+    font-family: sans-serif;
+}
 
 section .closeBtn, .noteMenu > .lockBtn {
     position: absolute;
@@ -405,13 +533,38 @@ section > .closeBtn:hover {
 }
 
 /* loginRegisterMenu*/
+
+.loginRegisterMenu > p {
+    margin-bottom: .25rem;
+}
+
+.loginRegisterMenu > p > input {
+    font-size: 1.75rem;
+    line-height: 1.75rem;
+    width: 25rem;
+}
+
+.loginRegisterMenu > p > label {
+    font-size: 2rem;
+    line-height: 2rem;
+    margin-top: .75rem;
+}
+
+.loginRegisterMenu > p:last-child {
+    height: 2.5rem;
+    bottom: .5rem;
+    position: absolute;
+    padding-right: 4rem;
+    justify-content: flex-end;
+}
+
 .registerRN p:nth-child(2):hover:after, .registerRN .focusTT:nth-child(2):after{
    position: absolute;
    right: 0;
    bottom: 100%;
    font-size: 1.15rem;
    padding: .25rem .5rem;
-   background-color: grey;
+   background-color: gray;
    content: "6 characters minimum";
 }
 
@@ -421,7 +574,7 @@ section > .closeBtn:hover {
     bottom: 100%;
     font-size: 1rem;
     padding: .25rem .5rem;
-    background-color: grey;
+    background-color: gray;
     content: "6 characters minimum. One uppercase character.";
 }
 
@@ -434,12 +587,12 @@ section > .closeBtn:hover {
 .noteMenu > .lockBtn > img {
     height: 15px;
     border-radius: 10px;
-    border: 1px solid white;
-    background-color: rgba(255, 255, 255, .4);
+    border: 1px solid wheat;
+    background-color: rgba(127, 177, 127);
 }
 
 .noteMenu .lockBtn > img.locked {
-    background-color: white;
+    background-color: wheat;
 }
 
 .noteMenu > .lockBtn > img:hover {
@@ -467,7 +620,7 @@ section > .closeBtn:hover {
     flex: 1;
     resize: none;
     line-height: 2rem;
-    font-size: 1.95rem;
+    font-size: 1.75rem;
     background-color: white;
     color: black;
 }
@@ -490,28 +643,33 @@ section > .closeBtn:hover {
     justify-content: flex-start;
 }
 
-.noteMenu .extraInput > p:nth-child(2){
+.noteMenu .extraInput > p:nth-child(2) {
     flex: 3;
     justify-content: flex-end;
     padding-right: .5rem;
 }
 
-.noteMenu.userEdit .extraInput > p:nth-child(2){
+.noteMenu.userEdit .extraInput > p:nth-child(2) {
     padding: 0;
     justify-content: center;
 }
 
-.noteMenu .extraInput p:nth-child(3){
+.noteMenu .extraInput p:nth-child(3) {
     justify-content: flex-end;
     flex: 0;
 }
 
-.noteMenu .extraInput p label{
+.noteMenu .extraInput p label {
     font-size: 1.5rem;
 }
 
-.noteMenu .extraInput p input{
+.noteMenu .extraInput p input {
     line-height: 1.8rem;
+}
+
+.noteMenu > .extraInput > p > button {
+    padding: 0 .4rem;
+    margin-right: .4rem;
 }
 
 /* user settings */
@@ -535,20 +693,27 @@ body section.userSettings.asideOpen {
 
 .userSettings > p label, input, aside label, aside input {
     line-height: 2rem;
-    font-size: 2rem;
+    font-size: 1.75rem;
 }
 
 .userSettings > p:nth-child(2) > .uploadLabel {
     margin-left: 1rem;
     padding: .25rem 1rem;
     border-radius: 1rem;
-    background-color: rgba(255,255,255,.2);
+    background-color: cadetblue;
+    color: wheat;
 }
 
 .userSettings > p:nth-child(2) > .uploadLabel:hover {
+    text-shadow: none;
+    padding: .05rem .8rem;
+    border: .2rem wheat solid;
     cursor: pointer;
     color: black;
-    background-color: rgba(255,255,255,.7);
+}
+
+.userSettings > p:nth-child(2) > .uploadLabel:active {
+    background: wheat;
 }
 
 .userSettings p .pfpContainer {
@@ -557,7 +722,7 @@ body section.userSettings.asideOpen {
     width: 8rem;
 }
 
-.userSettings P #userpfpInput {
+.userSettings > p > #userpfpInput {
     position: fixed;
     right: 100%;
     visibility: hidden;
@@ -565,7 +730,8 @@ body section.userSettings.asideOpen {
 
 .userSettings > div {
     width: 95%;
-    border: .1rem solid grey;
+    border: .1rem solid wheat;
+    background: rgba(127, 177, 127);
     border-radius: 1.5rem;
     margin: .5rem .75rem;
     padding: 1rem 1.75rem 0 1.75rem;
@@ -579,7 +745,7 @@ body section.userSettings.asideOpen {
     margin-bottom: 1rem;
 }
 
-.userSettings > div > P > button {
+.userSettings > div > p > button {
     color: whitesmoke;
     font-size: 1.6rem;
     padding: .25rem .75rem;
@@ -592,8 +758,24 @@ body section.userSettings.asideOpen {
 
 .userSettings > div > .userSidePanelBtn > button:hover {
     cursor: pointer;
-    background-color: rgba(255,255,255,.2);
-    border-radius: 2rem;
+    background-color: cadetblue;
+    /* border-radius: 2rem; */
+}
+
+.userSettings > div > .userSidePanelBtn:nth-child(1) > button:hover {
+    box-shadow: 0 -.2rem .4rem black;
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+}
+
+.userSettings > div > .userSidePanelBtn:nth-child(2) > button:hover {
+    box-shadow: 0 .3rem .4rem black;
+    border-bottom-left-radius: 1.5rem;
+    border-bottom-right-radius: 1.5rem;
+}
+
+.userSettings > p.saveProfileBtnCon > .saveProfileBtn {
+    padding: .1rem 1rem;
 }
 
 .userSettings > p {
@@ -610,7 +792,7 @@ body section.userSettings.asideOpen {
     height: 10rem;
     width: 23.1rem;
     padding: .5rem;
-    background-color: rgba(0,0,0,.7);
+    background-color: teal;
     border-top-right-radius: 1rem;
     border-bottom-right-radius: 1rem;
 }
@@ -625,8 +807,8 @@ body section.userSettings.asideOpen {
     /* left: calc(50% + 8rem); */
 }
 
-.userSettings > aside.userSidePanel > p {
-    margin-bottom: 1rem;
+.userSettings > aside.userSidePanel > p:nth-child(1) {
+    margin-bottom: 2rem;
 }
 
 .userSettings > aside.userSidePanel > p:nth-child(2) {
@@ -642,4 +824,5 @@ body section.userSettings.asideOpen {
 /* footer css */
 footer {
     flex: 0;
+    margin-bottom: .5rem;
 }

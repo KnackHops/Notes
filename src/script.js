@@ -76,14 +76,21 @@ const orderList = (whichOrder) => {
     
     let newNoteList = null;
 
-    if(whichOrder==="ascendCreated"){
+    if(whichOrder === "ascendCreated"){
         newNoteList = ascendCreated(noteList);
-    }else if(whichOrder==="descendCreated"){
+    }else if(whichOrder === "descendCreated"){
         newNoteList = descendCreated(noteList);
-    }else if(whichOrder==="ascendEdited"){
+    }else if(whichOrder === "ascendEdited"){
         newNoteList = ascendEdited(noteList);
-    }else if(whichOrder==="descendEdited"){
+    }else if(whichOrder === "descendEdited"){
         newNoteList = descendEdited(noteList);
+    }else{
+        localList = noteList.filter(note => note.user === 'localUser');
+        dbList = noteList.filter(note => note.user !== 'localUser');
+
+        localList.length !== 1 ? localList = ascendCreated(localList) : "";
+        dbList.length !== 1 ? dbList = ascendCreated(dbList) : "";
+        noteList = localList.concat(dbList);
     }
 
     newNoteList ? nodeLoad(newNoteList) : nodeLoad(noteList);
@@ -594,10 +601,8 @@ const saveNote = () => {
 
     if(user === "localUser"){
         indexedDBTerminal(_INDEXEDSTORENAME[0], note, "add").then(notes => {
-            noteList = noteList.filter(note => note.user!=="localUser");
-            notes.forEach(note => {
-                noteList.push(note);
-            })
+            note_db = noteList.filter(note => note.user !== "localUser");
+            noteList = notes.concat(note_db);
             closeBtnClicked(".noteMenu", false);
         })
     }else{
@@ -729,7 +734,6 @@ const deleteNote = () => {
         .then(resp=>{
             if(resp.ok){
                 noteList = noteList.filter(note=>{
-                    console.log(note.id === id);
                     if(note.user !== currentUser.username){
                         return true;
                     }else{
@@ -740,7 +744,6 @@ const deleteNote = () => {
                         }
                     }
                 });
-                console.log(noteList)
             }else{
                 throw resp;
             }
@@ -749,9 +752,19 @@ const deleteNote = () => {
         .finally(()=>closeBtnClicked('.noteMenu', true))
     }else{
         id = id.replace("localNote","");
-        indexedDBTerminal(_INDEXEDSTORENAME[0], Number(id), "del")
+        indexedDBTerminal(_INDEXEDSTORENAME[0], id, "del")
         .then(()=>{
-            noteList = noteList.filter(note=>note.id !== id && note.user !== 'localUser');
+            noteList = noteList.filter(note=>{
+                if(note.user !== 'localUser'){
+                    return true;
+                }else{
+                    if(note.id !== id){
+                        return true;
+                    }else{
+                        return false;
+                    }
+                }
+            });
         })
         .finally(()=>closeBtnClicked('.noteMenu', true))
     }
@@ -819,7 +832,13 @@ const noteBodyPreview = (rawId, handlerFunc) => {
 
     whichKind === "note" ? userVal = currentUser.username : "";
 
-    noteParti = noteList.filter(note => note.user === userVal && note.id === id);
+    noteParti = noteList.filter(note => {
+        if(note.user === userVal && note.id === id){
+            return true;
+        }else{
+            return false;
+        }
+    });
 
     let newBody = JSON.parse(noteParti[0].body);
 
@@ -847,8 +866,8 @@ const noteBodyPreview = (rawId, handlerFunc) => {
 
 const closeBodyPreview = (rawId, quill, handlerFunc, noteNode) => {
     quill.setContents("");
-    const closeNoteBtn = document.querySelector(`.close${rawId}`);
-    closeNoteBtn.parentNode.removeChild(closeNoteBtn);
+    const closeNoteBtn = document.querySelector(`.noteCloseContainer > .close${rawId}`);
+    closeNoteBtn.parentNode.parentNode.removeChild(closeNoteBtn.parentNode)
     noteNode.childNodes[1].addEventListener("click",handlerFunc);
     noteNode.childNodes[1].classList.toggle("previewClosed");
 }
@@ -931,18 +950,18 @@ const nodeLoad = (altDbase = null) => {
             })
 
             Promise.allSettled([mainDBPromise, indexedDBGetAllNoteOS()]).then(data=>{
+                
+                if(data[1].value.notes !== null){
+                    data[1].value.notes.forEach(note => {
+                        noteList.push(note);
+                    })
+                }
+
                 if(data[0].value.notes !== null){
                     data[0].value.notes.forEach(note => {
                         noteList.push(note);
                     })
                 }
-                
-                if(data[1].value.notes){
-                    data[1].value.notes.forEach(note => {
-                        noteList.push(note);
-                    })
-                }
-                
 
                 noteList.forEach(note => {
                     createNote(note.title, note.id, note.user);
@@ -1603,12 +1622,14 @@ const activePanel = () => {
         navNode.classList.toggle("panelActive");
         navNode.classList.toggle("panelInactive");
         userPanelBtn(true, [navNode.childNodes[1].childNodes[0], navNode.childNodes[3].childNodes[0]]);
+        document.querySelector('.loginRegisterMenuBtn:nth-child(2) > button').classList.toggle('panelIsOpen');
         
     }else{
         if(navNode.classList.contains("panelInactive")){
             navNode.classList.toggle("panelActive");
             setTimeout(()=>{
                 userPanelBtn(false, [navNode.childNodes[1].childNodes[0], navNode.childNodes[3].childNodes[0]]);
+                document.querySelector('.loginRegisterMenuBtn:nth-child(2) > button').classList.toggle('panelIsOpen');
             }, 200)
         }else{
             userPanelBtn(true, [navNode.childNodes[1].childNodes[0], navNode.childNodes[3].childNodes[0]]);
@@ -2026,8 +2047,6 @@ const indexedDBGetAllNoteOS = () => {
             req.onsuccess = e => {
                 let cursor = e.target.result;
                 if(cursor){
-                    // createNote(cursor.value.title, cursor.value.id, cursor.value.user);
-                    // noteList.push(cursor.value);
                     indexedNote.push(cursor.value);
                     x++;
                     cursor.continue();
