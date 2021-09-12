@@ -663,6 +663,10 @@ section > .closeBtn:hover {
     font-size: 1.5rem;
 }
 
+.noteMenu.userEdit > div.extraInput > .saveLocallyContainer > label.edit_created {
+    font-size: 1.25rem;
+}
+
 .noteMenu .extraInput p input {
     line-height: 1.8rem;
 }
