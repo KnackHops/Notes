@@ -50,7 +50,7 @@ let prevTitleInput, prevBodyInput;
 let prevEditable, prevLocked;
 let userName, userPass, userEmail;
 let sideInput;
-let userMobile, userNickName, userEditEmail;
+let userMobile, userNickName;
 let _userMobile, _userNickName;
 let editable = false;
 let isLocked = false;
@@ -85,8 +85,8 @@ const orderList = (whichOrder) => {
     }else if(whichOrder === "descendEdited"){
         newNoteList = descendEdited(noteList);
     }else{
-        localList = noteList.filter(note => note.user === 'localUser');
-        dbList = noteList.filter(note => note.user !== 'localUser');
+        localList = noteList.filter(note => note.username === 'localUser');
+        dbList = noteList.filter(note => note.username !== 'localUser');
 
         localList.length !== 1 ? localList = ascendCreated(localList) : "";
         dbList.length !== 1 ? dbList = ascendCreated(dbList) : "";
@@ -99,7 +99,7 @@ const orderList = (whichOrder) => {
 const ascendCreated = arrayDbase => {
     return arrayDbase.sort(
         function(a,b){
-            return totalDate(a.date.day, a.date.month, a.date.year) - totalDate(b.date.day, b.date.month, b.date.year);
+            return totalDate(a.date_created.day, a.date_created.month, a.date_created.year) - totalDate(b.date_created.day, b.date_created.month, b.date_created.year);
         }
     );
 }
@@ -107,7 +107,7 @@ const ascendCreated = arrayDbase => {
 const descendCreated = arrayDbase => {
     return arrayDbase.sort(
         function(a,b){
-            return totalDate(b.date.day, b.date.month, b.date.year) - totalDate(a.date.day, a.date.month, a.date.year);
+            return totalDate(b.date_created.day, b.date_created.month, b.date_created.year) - totalDate(a.date_created.day, a.date_created.month, a.date_created.year);
         }
     );
 }
@@ -138,13 +138,13 @@ const descendEdited = arrayDbase => {
     )
 }
 
-const dateEditedCheck = ({lastUpdated,date}) => {
+const dateEditedCheck = ({last_updated, date_created}) => {
     let total;
 
-    if(lastUpdated){
-        total = totalDate(lastUpdated.day, lastUpdated.month, lastUpdated.year);
+    if(last_updated){
+        total = totalDate(last_updated.day, last_updated.month, last_updated.year);
     }else{
-        total = totalDate(date.day, date.month, date.year);
+        total = totalDate(date_created.day, date_created.month, date_created.year);
     }
 
     return total;
@@ -157,28 +157,32 @@ const totalDate = (day, month,year) => {
 const dateNowGet = () => {
     const d = new Date();
     let newDate = {};
+    newDate.year =  d.getFullYear();
     newDate.month = d.getMonth();
     newDate.day = d.getDate();
-    newDate.year =  d.getFullYear();
 
     return newDate;
 }
 
-const logInUserValidate = (localUser = null) => {
+const logInUserValidate = (localUserID = null) => {
     return new Promise((resolve, reject) => {
-        if(userName && userPass || localUser){
+        if(userName && userPass || localUserID){
             // fetching login data from backend
             new Promise((resolve, reject) => {
-                if(localUser){
-                    fetch('http://127.0.0.1:5000/user/profile-date-get', {
-                        method: 'POST',
-                        mode: 'cors',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            username: localUser
-                        })
+                if(localUserID){
+                    // fetch('http://127.0.0.1:5000/user/profile-date-get', {
+                    //     method: 'POST',
+                    //     mode: 'cors',
+                    //     headers: {
+                    //         'Content-Type': 'application/json'
+                    //     },
+                    //     body: JSON.stringify({
+                    //         userid: localUserID
+                    //     })
+                    // })
+                    fetch(`http://127.0.0.1:5000/user/profile-date-get/?userid=${localUserID}`, {
+                        method: 'GET',
+                        mode: 'cors'
                     })
                     .then(resp => {
                         if(resp.ok){
@@ -187,7 +191,7 @@ const logInUserValidate = (localUser = null) => {
                             throw resp;
                         }
                     })
-                    .then(userProfileGet =>resolve(userProfileGet))
+                    .then(userProfileGet => resolve(userProfileGet))
                     .catch(errData => errData.json().then(({errorMessage}) =>reject({errorMessage})))
                 }else{
                     fetch('http://127.0.0.1:5000/user/login', {
@@ -212,31 +216,35 @@ const logInUserValidate = (localUser = null) => {
                     .catch(errData => errData.json().then(({errorMessage})=>reject(errorMessage)))
                 }
 
-            }).then(({username, pfpLast, nickLast}) => {
-                indexedDBGetData(_INDEXEDSTORENAME[1], username).then(data => {
+            }).then(({userid, pfp_last, nick_last}) => {
+                indexedDBGetData(_INDEXEDSTORENAME[1], userid).then(data => {
                     if(data.target.result){
                     // entry exists, therefore we compare dates to check if local data is updated
-                        let indexedPfpLast = data.target.result.pfpData.pfpLast;
-                        let indexedNickLast = data.target.result.nickData.nickLast;
+                        let indexedPfpLast = data.target.result.pfp_data.pfp_last;
+                        let indexedNickLast = data.target.result.nick_data.nick_last;
                         let whichUpdated = {pfp: false, nick: false};
 
 
-                        if(totalDate(indexedPfpLast) !== totalDate(pfpLast)){
+                        if(totalDate(indexedPfpLast) !== totalDate(pfp_last)){
                             whichUpdated.pfp = true;
                         }
 
-                        if(totalDate(indexedNickLast) !== totalDate(nickLast)){
+                        if(totalDate(indexedNickLast) !== totalDate(nick_last)){
                             whichUpdated.nick = true;
                         }
 
                         if(whichUpdated.pfp === true || whichUpdated.nick === true){
-                            fetch('http://127.0.0.1:5000/user/profile-get',{
-                                method: 'POST',
-                                mode: 'cors',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({username})
+                            // fetch('http://127.0.0.1:5000/user/profile-get',{
+                            //     method: 'POST',
+                            //     mode: 'cors',
+                            //     headers: {
+                            //         'Content-Type': 'application/json'
+                            //     },
+                            //     body: JSON.stringify({userid})
+                            // })
+                            fetch(`http://127.0.0.1:5000/user/user-get?userid=${userid}`, {
+                                method: 'GET',
+                                mode: 'cors'
                             })
                             .then(resp => {
                                 if(resp.ok){
@@ -245,25 +253,22 @@ const logInUserValidate = (localUser = null) => {
                                     throw resp;
                                 }
                             })
-                            .then(({pfp, nickname, email, mobile}) => {
-                                if('errorMessage' in user){
-                                    reject(user.errorMessage);
-                                }else{
-                                    let updateUserProfile = {
-                                        username,
-                                        pfpData: {
-                                            pfp,
-                                            pfpLast
-                                        },
-                                        nickData: {
-                                            nickname,
-                                            nickLast
-                                        },
-                                        mobile,
-                                        email
-                                    }
-                                    resolve(updateUserProfile);
+                            .then(({username, pfp, nickname, email, mobile}) => {
+                                let updateUserProfile = {
+                                    username,
+                                    userid,
+                                    pfp_data: {
+                                        pfp,
+                                        pfp_last
+                                    },
+                                    nick_data: {
+                                        nickname,
+                                        nick_last
+                                    },
+                                    mobile,
+                                    email
                                 }
+                                resolve(updateUserProfile);
                             })
                             .catch(errData => errData.json().then(({errorMessage})=>reject(errorMessage)))
                         }else{
@@ -272,13 +277,17 @@ const logInUserValidate = (localUser = null) => {
                         }
                     }else{
                     // entry doesn't exist in the store, therefore we create it
-                        fetch('http://127.0.0.1:5000/user/profile-get',{
-                            method: 'POST',
-                            mode: 'cors',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({username})
+                        // fetch('http://127.0.0.1:5000/user/profile-get',{
+                        //     method: 'POST',
+                        //     mode: 'cors',
+                        //     headers: {
+                        //         'Content-Type': 'application/json'
+                        //     },
+                        //     body: JSON.stringify({userid})
+                        // })
+                        fetch(`http://127.0.0.1:5000/user/user-get?userid=${userid}`,{
+                            method: 'GET',
+                            mode: 'cors'
                         })
                         .then(resp => {
                             if(resp.ok){
@@ -287,17 +296,17 @@ const logInUserValidate = (localUser = null) => {
                                 throw resp;
                             }
                         })
-                        .then(({pfp, nickname, email, mobile}) => {
-                            console.log(email)
+                        .then(({username, pfp, nickname, email, mobile}) => {
                             let newUserProfile = {
                                 username,
-                                pfpData: {
+                                userid,
+                                pfp_data: {
                                     pfp,
-                                    pfpLast
+                                    pfp_last
                                 },
-                                nickData: {
+                                nick_data: {
                                     nickname,
-                                    nickLast
+                                    nick_last
                                 },
                                 mobile,
                                 email
@@ -316,14 +325,6 @@ const logInUserValidate = (localUser = null) => {
             // alert("Please fill out area");
             reject("Please fill out area");
         }
-    })
-}
-
-const userCache = username => {
-    return new Promise((resolve, reject) => {
-        indexedDBGetData(_INDEXEDSTORENAME[1], username)
-        .then(data=>resolve(data))
-        .catch(()=>reject(false));
     })
 }
 
@@ -355,9 +356,9 @@ const userLogInOut = loggingIn => {
         imgCon.appendChild(imgIn);
         userNavBtns.appendChild(imgCon);
 
-        currentUser.nickData.nickname ? panelBtnChange(currentUser.nickData.nickname) : panelBtnChange(currentUser.username);
+        currentUser.nick_data.nickname ? panelBtnChange(currentUser.nick_data.nickname) : panelBtnChange(currentUser.username);
 
-        currentUser.pfpData.pfp === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentUser.pfpData.pfp);
+        currentUser.pfp_data.pfp === 'default' ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentUser.pfp_data.pfp);
     }else{
         const imgCon = document.querySelector(".pfpContainer.nonProfilePfp");
         const imgIn = document.querySelector(".pfpContainer.nonProfilePfp .pfp");
@@ -450,7 +451,6 @@ const registerUser = user => {
 const userTerminal = () => {
     if(document.querySelector(".emailContainer").classList.contains("hiddenSection")){
         logInUserValidate().then(userResp => {
-            console.log(userResp)
             currentUser = userResp;
             accountLogged(true);
             userLogInOut(true);
@@ -463,24 +463,13 @@ const userTerminal = () => {
     }else{
         if(registerUserValidate()){
             const username = userName.toLowerCase()
-            date = dateNowGet();
-
             user = {
                 login_data: {
-                    username,
                     password: userPass
                 },
                 user_data: {
                     username,
                     email: userEmail,
-                    mobile: null,
-                    pfp: 'default',
-                    nickname: null
-                },
-                profile_data: {
-                    username,
-                    pfpLast: date,
-                    nickLast: date
                 }
             }
 
@@ -519,27 +508,24 @@ const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prev
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        user: currentUser.username,
                         id: id,
+                        username: currentUser.username,
                         editable: isEditableChk,
                         locked: isLockedChk,
-                        lockedPass: lockedPassVal
+                        locked_password: lockedPassVal
                     })
                 })
                 .then(resp => {
                     if(resp.ok){
-                        return resp.json()
+                        noteList.forEach(note => {
+                            if(note.id === id && note.username !== 'localUser'){
+                                note.editable === isEditableChk ? "" : note.editable = isEditableChk;
+                                note.locked === isLockedChk ? "" : (note.locked = isLockedChk, note.locked_password = isLockedPass);
+                            }
+                        })
                     }else{
                         throw resp
                     }
-                })
-                .then(()=>{
-                    noteList.forEach(note => {
-                        if(note.id === id && note.user !== 'localUser'){
-                            note.editable === isEditableChk ? "" : note.editable = isEditableChk;
-                            note.locked === isLockedChk ? "" : (note.locked = isLockedChk, note.lockedPass = isLockedPass);
-                        }
-                    })
                 })
                 .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
                 .finally(()=>resolve())
@@ -548,14 +534,14 @@ const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prev
                     note = data.target.result;
                     note.editable = isEditableChk;
                     note.locked = isLockedChk;
-                    note.lockedPass = lockedPassVal;
+                    note.locked_password = lockedPassVal;
             
                     indexedDBTerminal(_INDEXEDSTORENAME[0], note, "edit")
                     .then(()=>{
                         noteList.forEach(note => {
-                            if(note.id === id && note.user === 'localUser'){
+                            if(note.id === id && note.username === 'localUser'){
                                 note.editable === isEditableChk ? "" : note.editable = isEditableChk;
-                                note.locked === isLockedChk ? "" : (note.locked = isLockedChk, note.lockedPass = isLockedPass);
+                                note.locked === isLockedChk ? "" : (note.locked = isLockedChk, note.locked_password = isLockedPass);
                             }
                         })
                     })
@@ -574,45 +560,42 @@ const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prev
 
 const saveNote = () => {
     // let id = null;
-    let lockedPass = null;
-    let newDate = dateNowGet();
-    let user;
+    let locked_password = null;
+    let username = "localUser";
 
     if(currentUser && !saveLocalChk){
-        user = currentUser.username;
-    }else{
-        user = "localUser";
+        username = currentUser.username;
     }
 
-    isLocked ? lockedPass = isLockedPass : null;
+    isLocked ? locked_password = isLockedPass : "";
     
     isSavedAlready = true;
 
-    note = {
+    _note = {
+        username,
         title: titleInput,
         body: bodyInput,
         editable,
         locked: isLocked,
-        lockedPass,
-        user,
-        date: newDate,
-        lastUpdated: null
+        locked_password
     }
 
-    if(user === "localUser"){
-        indexedDBTerminal(_INDEXEDSTORENAME[0], note, "add").then(notes => {
-            note_db = noteList.filter(note => note.user !== "localUser");
+    if(username === "localUser"){
+        _note.date_created = dateNowGet()
+        _note.lastUpdated = null
+        indexedDBTerminal(_INDEXEDSTORENAME[0], _note, "add").then(notes => {
+            note_db = noteList.filter(note => note.username !== "localUser");
             noteList = notes.concat(note_db);
             closeBtnClicked(".noteMenu", false);
         })
     }else{
-        fetch('http://127.0.0.1:5000/save', {
+        fetch('http://127.0.0.1:5000/save-note', {
             method: 'POST',
             mode: 'cors',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(note)
+            body: JSON.stringify(_note)
         })
         .then(resp => {
             if(resp.ok){
@@ -621,8 +604,7 @@ const saveNote = () => {
                 throw resp;
             }
         })
-        .then(({id}) => {
-            note['id'] = id
+        .then((note) => {
             noteList.push(note);
         })
         .catch(errData => errData.json().then(({errorMessage})=>promptHandler('alert', errorMessage)))
@@ -635,57 +617,55 @@ const editNote = () => {
     let id = currentOpenID;
     let titleInputVal = titleInput;
     let bodyInputVal = bodyInput;
-    let title, body, lastUpdated;
+    let title, body, last_updated, new_note, edited;
     let whichKind = idStringCut(id);
 
     id = Number(currentOpenID.replace(whichKind,""));
 
     noteList.forEach(note => {
-        if(whichKind === 'note' && note.user !== 'localUser'){
+        if(whichKind === 'note' && note.username !== 'localUser'){
             if(note.id === id){
-                [title, body, lastUpdated] = editAndCheck(note.title, note.body, titleInputVal, bodyInputVal);
-                fetch('http://127.0.0.1:5000/edit',{
+                [edited, new_note] = editAndCheck(note.title, note.body, titleInputVal, bodyInputVal, false);
+                if(edited){
+                    new_note.id = id
+                    new_note.username = currentUser.username;
+                    fetch('http://127.0.0.1:5000/edit',{
                     method: 'PUT',
                     mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        user: currentUser.username,
-                        id,
-                        title,
-                        body,
-                        lastUpdated
+                    body: JSON.stringify(new_note)
                     })
-                })
-                .then(resp => {
-                    if(resp.ok){
-                        note.title = title;
-                        note.body = body;
-                        note.lastUpdated = lastUpdated;
-                        resolve();
-                    }else{
-                        throw resp;
-                    }
-                })
-                .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
-                .finally(()=>closeBtnClicked('.noteMenu', true))
+                    .then(resp => {
+                        if(resp.ok){
+                            'title' in new_note ? note.title = new_note.title : ""
+                            'body' in new_note ? note.body = new_note.body : ""
+                            note.last_updated = dateNowGet();
+                        }else{
+                            throw resp;
+                        }
+                    })
+                    .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
+                    .finally(()=>closeBtnClicked('.noteMenu', true))
+                }else{
+                    closeBtnClicked('.noteMenu', true)
+                }
             }
         }else{
-            if(note.id === id && note.user === 'localUser'){
-                [title, body, lastUpdated] = editAndCheck(note.title, note.body, titleInputVal, bodyInputVal);
+            if(note.id === id && note.username === 'localUser'){
+                [title, body, last_updated] = editAndCheck(note.title, note.body, titleInputVal, bodyInputVal, true);
                 indexedDBGetData(_INDEXEDSTORENAME[0], id).then(rawData => {
                     if(rawData){
                         data = rawData.target.result;
                         data.title = title;
                         data.body = body;
-                        lastUpdated = lastUpdated;
+                        last_updated = last_updated;
                         indexedDBTerminal(_INDEXEDSTORENAME[0], data, 'edit')
                         .then(() => {
                             note.title = title;
                             note.body = body;
-                            note.lastUpdated = lastUpdated;
-                            resolve();
+                            note.last_updated = last_updated;
                         })
                         .finally(()=>closeBtnClicked('.noteMenu', true))
                     }
@@ -693,30 +673,32 @@ const editNote = () => {
             }
         }
     })
-
-    if(!lastUpdated){
-        closeBtnClicked('.noteMenu', true)
-    }
 }
 
-const editAndCheck = (title, body, titleInputVal, bodyInputVal) => {
+const editAndCheck = (title, body, titleInputVal, bodyInputVal, fromLocal) => {
     let edited=false;
-    let lastUpdated=null;
+    let last_updated=null;
+    let note = {}
 
     if(title!==titleInputVal){
         title=titleInputVal;
         edited=true;
+        note.title = title
     }
 
     if(body!==bodyInputVal){
         body=bodyInputVal;
         edited=true;
+        note.body = body
     }
-
-    if(edited){
-        lastUpdated = dateNowGet();
+    if(fromLocal === true){
+        if(edited){
+            last_updated = dateNowGet();
+        }
+        return [title, body, last_updated];
+    }else{
+        return [edited, note]
     }
-    return [title, body, lastUpdated];
 }
 
 const deleteNote = () => {
@@ -724,7 +706,7 @@ const deleteNote = () => {
 
     if(id.indexOf("note")==0){
         id = Number(id.replace("note",""));
-        fetch(`http://127.0.0.1:5000/delete?id=${id}&user=${currentUser.username}`,{
+        fetch(`http://127.0.0.1:5000/delete?id=${id}&username=${currentUser.username}`,{
             method: 'DELETE',
             mode: 'cors',
             headers: {
@@ -734,7 +716,7 @@ const deleteNote = () => {
         .then(resp=>{
             if(resp.ok){
                 noteList = noteList.filter(note=>{
-                    if(note.user !== currentUser.username){
+                    if(note.username !== currentUser.username){
                         return true;
                     }else{
                         if(note.id !== id){
@@ -755,7 +737,7 @@ const deleteNote = () => {
         indexedDBTerminal(_INDEXEDSTORENAME[0], id, "del")
         .then(()=>{
             noteList = noteList.filter(note=>{
-                if(note.user !== 'localUser'){
+                if(note.username !== 'localUser'){
                     return true;
                 }else{
                     if(note.id !== id){
@@ -833,12 +815,14 @@ const noteBodyPreview = (rawId, handlerFunc) => {
     whichKind === "note" ? userVal = currentUser.username : "";
 
     noteParti = noteList.filter(note => {
-        if(note.user === userVal && note.id === id){
+        if(note.username === userVal && note.id === id){
             return true;
         }else{
             return false;
         }
     });
+
+    console.log(noteParti)
 
     let newBody = JSON.parse(noteParti[0].body);
 
@@ -912,8 +896,8 @@ const nodeLoad = (altDbase = null) => {
         clearNotes();
 
         if(altDbase){
-            altDbase.forEach(({id, title, user})=>{
-                createNote(title, id, user);
+            altDbase.forEach(({id, title, username})=>{
+                createNote(title, id, username);
             })
             createNote();
             resolve();
@@ -923,15 +907,9 @@ const nodeLoad = (altDbase = null) => {
 
             let mainDBPromise = new Promise((resolve, reject) => {
                 if(currentUser){
-                    fetch('http://127.0.0.1:5000/fetch-all', {
-                        method: 'POST',
-                        mode: 'cors',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user: currentUser.username
-                        })
+                    fetch(`http://127.0.0.1:5000/fetch-all?username=${currentUser.username}`,{
+                        method: 'GET',
+                        mode: 'cors'
                     })
                     .then(resp=>{
                         if(resp.ok){
@@ -964,7 +942,7 @@ const nodeLoad = (altDbase = null) => {
                 }
 
                 noteList.forEach(note => {
-                    createNote(note.title, note.id, note.user);
+                    createNote(note.title, note.id, note.username);
                 })
                 createNote();
             })
@@ -1026,9 +1004,6 @@ const clicked = e => {
             closeBtnClicked("." + parent.classList[0]);
         }
     }else if(nodeClass==="delBtn"){
-        // if(confirm("Are you sure?")){
-        //     deleteNote();
-        // }
         promptHandler("confirm", "Are you sure?");
 
         let promptInterval = setInterval(() => {
@@ -1221,6 +1196,10 @@ const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
             addBtn.classList.toggle("addBtn");
             addBtn.textContent = "Add Note";
             document.querySelector(".noteMenu").classList.toggle("userEdit");
+            const lbl = document.querySelector(".noteMenu > div.extraInput > .saveLocallyContainer > label")
+            if(lbl.classList.contains('edit_created')){
+                lbl.classList.toggle('edit_created')
+            }
         }else{
             const saveLocallyCon = document.querySelector(".extraInput .saveLocallyContainer");
 
@@ -1260,7 +1239,7 @@ const closeBtnClicked = (nodeClass, userEdit, initialize=false) => {
             menuClicked(".userSidePanel");
         }
 
-        userEditEmail = userNickName = _userNickName = userMobile = _userMobile = null;
+        userNickName = _userNickName = userMobile = _userMobile = null;
 
         [sidePanelControl.childNodes[1], sidePanelControl.childNodes[3], sidePanelControl.childNodes[5]].forEach((item, i)=>{
             if(i!==2){
@@ -1338,13 +1317,13 @@ const noteMenuPanelHandler = nodeClass => {
             let id = Number(currentOpenID.replace(whichKind, ""));
 
             noteList.forEach(note => {
-                if(whichKind === "note" && note.user !== "localUser"){
-                    if(currentUser.username === note.user){
+                if(whichKind === "note" && note.username !== "localUser"){
+                    if(currentUser.username === note.username){
                         if(id === note.id){
                             resolve(note);
                         }
                     }
-                }else if(whichKind === "localNote" && note.user === "localUser"){
+                }else if(whichKind === "localNote" && note.username === "localUser"){
                     if(id === note.id){
                         resolve(note);
                     }
@@ -1378,7 +1357,7 @@ const noteMenuUnlock = data => {
                         if(!promptInp){
                             reject("Empty password!");
                         }
-                        if(promptInp === data.lockedPass){
+                        if(promptInp === data.locked_password){
                             resolve();
                         }else{
                             reject("Wrong password!")
@@ -1419,11 +1398,12 @@ const noteMenuLoadProfile = (data, nodeClass, locallySaveCheck, delBtn, addBtn) 
 
     prevEditable = editable = data.editable;
     prevLocked = isLocked = data.locked;
-    isLockedPass = data.lockedPass;
+    isLockedPass = data.locked_password;
 
-    let date = `created: ${data.date.month+1}/${data.date.day}/${data.date.year}`;
-    if(data.lastUpdated){
-        date+=` edited: ${data.lastUpdated.month+1}/${data.lastUpdated.day}/${data.lastUpdated.year}`;
+    let date = `created: ${data.date_created.month+1}/${data.date_created.day}/${data.date_created.year}`;
+    if(data.last_updated){
+        date+=` edited: ${data.last_updated.month+1}/${data.last_updated.day}/${data.last_updated.year}`;
+        locallySaveCheck.childNodes[1].classList.toggle('edit_created');
     }
 
     locallySaveCheck.childNodes[1].innerText = date;
@@ -1454,11 +1434,11 @@ const noteMenuLoadProfile = (data, nodeClass, locallySaveCheck, delBtn, addBtn) 
 const userSettingsPanelHandler = nodeClass => {
     const sidePanelControl = document.querySelector(".sidePanelControl");
 
-    if(currentUser.pfpData.pfp === "default"){
+    if(currentUser.pfp_data.pfp === "default"){
         pfpChange(_DEFAULTPFP);
         pfpEditCheck(false);
     }else{
-        pfpChange(currentUser.pfpData.pfp);
+        pfpChange(currentUser.pfp_data.pfp);
         pfpEditCheck(true);
     }
 
@@ -1468,10 +1448,10 @@ const userSettingsPanelHandler = nodeClass => {
             item.childNodes[1].addEventListener("click",clicked);
             item.childNodes[1].disabled=false;
             i === 0 ? 
-            (currentUser.nickData.nickname ? item.childNodes[1].textContent = userNickName = _userNickName = currentUser.nickData.nickname : "") : 
+            (currentUser.nick_data.nickname ? item.childNodes[1].textContent = userNickName = _userNickName = currentUser.nick_data.nickname : "") : 
             (currentUser.mobile ? item.childNodes[1].textContent = userMobile = _userMobile = currentUser.mobile : "" );
         }else{
-            item.childNodes[1].textContent = userEditEmail = currentUser.email;
+            item.childNodes[1].textContent = currentUser.email;
         }
         
     })
@@ -1648,12 +1628,13 @@ const userPanelBtn = (varBool, [btn1, btn2]) => {
 
 const checkLoggedAccount = () => {
     if(localStorage.getItem(_USERLOGGEDKEY)){
-        let localUsername = localStorage.getItem(_USERLOGGEDKEY);
-        logInUserValidate(localUsername).then(userResp => {
+        let localUserID = localStorage.getItem(_USERLOGGEDKEY);
+        logInUserValidate(localUserID).then(userResp => {
             currentUser = userResp;
             accountLogged(true);
             userLogInOut(true);
         }).catch(() => {
+            localStorage.removeItem(_USERLOGGEDKEY)
             accountLogged(false);
             nodeLoad().then(() => console.log("notes loaded"));
         })
@@ -1663,31 +1644,29 @@ const checkLoggedAccount = () => {
 }
 
 const accountLogged = isLogged => {
-    isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser.username) : localStorage.removeItem(_USERLOGGEDKEY);
+    isLogged ? localStorage.setItem(_USERLOGGEDKEY, currentUser.userid) : localStorage.removeItem(_USERLOGGEDKEY);
 }
 
 const saveProfile = () => {
     //checks if currentFile was changed
     //currentFile by default is null
     //currentFile having a value other than null means it was changed
-    let user = {username: currentUser.username};
+    let user = {userid: currentUser.userid};
     // if(currentFile){
     //     // updateUserDBASE(currentUser,'pfp',currentFile);
     //     user['pfp'] = currentFile;
     // }
 
-    changedSettingsChk[_CHANGESETPROP[0]] ? (user['pfp'] = currentFile, user['pfpLast'] = dateNowGet()) : "";
-    changedSettingsChk[_CHANGESETPROP[1]] ? (user['nickname'] = userNickName, user['nickLast'] = dateNowGet()) : "";
+    changedSettingsChk[_CHANGESETPROP[0]] ? user['pfp'] = currentFile : "";
+    changedSettingsChk[_CHANGESETPROP[1]] ? user['nickname'] = userNickName : "";
     changedSettingsChk[_CHANGESETPROP[2]] ? user['mobile'] = userMobile : "";
-
-    _CHANGESETPROP.forEach(item => changedSettingsChk[item] ? changedSettingsChk[item] = false : "");
 
     // updateUserDBASE(currentUser,'nickname',userNickName);
     // updateUserDBASE(currentUser,'mobile',userMobile);
 
     if('pfp' in user || 'nickname' in user || 'mobile' in user){
-        fetch('http://127.0.0.1:5000/user/profile-save', {
-            method: 'PUT',
+        fetch('http://127.0.0.1:5000/user/user-save', {
+            method: 'POST',
             mode: 'cors',
             headers: {
                 'Content-Type': 'application/json'
@@ -1696,13 +1675,19 @@ const saveProfile = () => {
         })
         .then(resp => {
             if(resp.ok){
-                if(userNickName){
-                    panelBtnChange(userNickName);
-                }else{
-                    panelBtnChange(currentUser.username);
+                if(changedSettingsChk[_CHANGESETPROP[0]]){
+                    currentUser.pfp_data.pfp_last = dateNowGet();
+                    if(currentFile){
+                        currentFile === "default" ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentFile);
+                    }
                 }
-                if(currentFile){
-                    currentFile === "default" ? pfpNavChange(_DEFAULTPFP) : pfpNavChange(currentFile);
+                if(changedSettingsChk[_CHANGESETPROP[1]]){
+                    currentUser.nick_data.nick_last = dateNowGet();
+                    if(userNickName){
+                        panelBtnChange(userNickName);
+                    }else{
+                        panelBtnChange(currentUser.username);
+                    }
                 }
                 closeBtnClicked(".userSettings");
             }else{
@@ -1711,13 +1696,13 @@ const saveProfile = () => {
         })
         .catch(errData=>errData.json().then(({errorMessage})=>promptHandler('alert',errorMessage)))
         .finally(()=>{
+            _CHANGESETPROP.forEach(item => changedSettingsChk[item] ? changedSettingsChk[item] = false : "");
             currentFile=null;
         })
     }else{
         currentFile=null;
         closeBtnClicked(".userSettings");
     }
-    // closeBtnClicked(".userSettings");
 
 }
 
@@ -1751,39 +1736,80 @@ const userMobileNickHandler = () => {
 
     const open_DATA = sidePanelControl.childNodes[3].attributes.data_open.value;
     let valueReturn, whichChange;
+    let strErr;
 
-    open_DATA === "nickName" ? valueReturn = userNickName : valueReturn = userMobile;
-
-    if(sideInput){
-        if((open_DATA === "nickName" && sideInput !== _userNickName) ||
-        (open_DATA === "mobile" && sideInput !== _userMobile)){
-            valueReturn = sideInput;
-            btnChk = false;
+    if(open_DATA === 'nickName'){
+        userNickName = sideInput;
+        if(userNickName.length > 15){
+            strErr = "Nickname should be 15 characters at a maximum"
         }else{
-            if(open_DATA === "nickName" && userNickName !== _userNickName){
-                valueReturn = _userNickName;
-            }else if(open_DATA === "mobile" && userMobile !== _userMobile){
-                valueReturn = _userMobile;
+            if(userNickName.length < 5){
+                valueReturn = userNickName;
+            }else{
+                strErr = "Nickname should be 4 characters at a minimum"
             }
-            btnChk = true;
+        }
+        
+    }else{
+        userMobile = sideInput;
+        if(userMobile > 13){
+            valueReturn = null
+            chkChange = false;
+            strErr = "Mobile number should be 13 characters at a maximum"
+        }else{
+            if(userMobile.length < 12){
+                if(mobileNumberCheck(userMobile)){
+                    valueReturn = userMobile;
+                }else{
+                    strErr = "Please provide a proper mobile number"
+                }
+            }else{
+                strErr = "Mobile number should be 11 characters at a minimum"
+            }
+        }
+    }
+
+    if(strErr){
+        valueReturn = null;
+        chkChange = false;
+    }
+
+    if(chkChange){
+        open_DATA === "nickName" ? valueReturn = userNickName : valueReturn = userMobile;
+
+        if(sideInput){
+            if((open_DATA === "nickName" && sideInput !== _userNickName) ||
+            (open_DATA === "mobile" && sideInput !== _userMobile)){
+                valueReturn = sideInput;
+                btnChk = false;
+            }else{
+                if(open_DATA === "nickName" && userNickName !== _userNickName){
+                    valueReturn = _userNickName;
+                }else if(open_DATA === "mobile" && userMobile !== _userMobile){
+                    valueReturn = _userMobile;
+                }
+                btnChk = true;
+            }
+        }else{
+            if((open_DATA === "nickName" && userNickName) || (open_DATA === "mobile" && userMobile)){
+                let returnVar = false;
+                valueReturn = null;
+
+                if(open_DATA === "nickName"){
+                    !_userNickName && userNickName ? returnVar = true : "";
+                }else{
+                    !_userMobile && userMobile ? returnVar = true : "";
+                }
+            
+                btnChk = returnVar;
+            }else{
+                // alert("empty");
+                promptHandler("alert","Please provide a value")
+                chkChange=false;
+            }
         }
     }else{
-        if((open_DATA === "nickName" && userNickName) || (open_DATA === "mobile" && userMobile)){
-            let returnVar = false;
-            valueReturn = null;
-
-            if(open_DATA === "nickName"){
-                !_userNickName && userNickName ? returnVar = true : "";
-            }else{
-                !_userMobile && userMobile ? returnVar = true : "";
-            }
-            
-            btnChk = returnVar;
-        }else{
-            // alert("empty");
-            promptHandler("alert","empty")
-            chkChange=false;
-        }
+        promptHandler("alert", strErr)
     }
 
     open_DATA === "nickName" ? userNickName = valueReturn : userMobile = valueReturn;
@@ -1791,6 +1817,22 @@ const userMobileNickHandler = () => {
 
     chkChange ? saveProfileBtnChk(btnChk, whichChange) : "";
     menuClicked(".userSidePanel");
+}
+
+const mobileNumberCheck = mobileVar => {
+    let returnVar = false;
+
+    if(!mobileVar.isNaN){
+        if(!mobileVar.includes('e')){
+            let firstTwoChar = mobileVar.slice(0,2);
+            let firstThreeChar = mobileVar.slice(0,3);
+            if(firstTwoChar === '09' || firstThreeChar === '639'){
+                returnVar = true;
+            }
+        }
+    }
+
+    return returnVar;
 }
 
 const pfpUpload = e => {
@@ -1860,8 +1902,8 @@ const pfpEditCheck = userPfpEditable => {
 const pfpChange = newPfP => {
     document.querySelector(".userSettings .pfpContainer .pfp").src=newPfP;
     let chkToDisable;
-    if(currentUser.pfpData.pfp !== newPfP){
-        if(currentUser.pfpData.pfp === "default" && newPfP ===_DEFAULTPFP){
+    if(currentUser.pfp_data.pfp !== newPfP){
+        if(currentUser.pfp_data.pfp === "default" && newPfP ===_DEFAULTPFP){
             chkToDisable = true;
         }else{
             chkToDisable = false;
@@ -1912,9 +1954,9 @@ const updateUserDBASE = (username, propName, propValue) => {
     let changeProperty = null;
 
     if(propName==="pfp"){
-        changeProperty = "pfpLast";
+        changeProperty = "pfp_last";
     }else if(propName==="nickname"){
-        changeProperty = "nickLast";
+        changeProperty = "nick_last";
     }
 
     userProfileChange_DATABASE.forEach(item=>{
@@ -1967,7 +2009,7 @@ const indexedDBInit = dbase => {
     switch (dbase.version) {
         case 1:
             !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[0]) ? dbase.createObjectStore(_INDEXEDSTORENAME[0], {keyPath: 'id', autoIncrement: true}) : "";
-            !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[1]) ? dbase.createObjectStore(_INDEXEDSTORENAME[1], {keyPath: 'username'}) : "";
+            !dbase.objectStoreNames.contains(_INDEXEDSTORENAME[1]) ? dbase.createObjectStore(_INDEXEDSTORENAME[1], {keyPath: 'userid'}) : "";
     }
 }
 
@@ -2013,7 +2055,6 @@ const indexedDBTerminal = (oSName, item, transactionType) => {
                 }
     
                 tx.onerror = () => {
-                    // console.log("nop");
                     reject(false);
                 }
     
@@ -2386,28 +2427,4 @@ window.onload = () =>{
     indexedDBGetDB();
 
     checkLoggedAccount();
-    // let dont = true;
-    // if(dont){
-    //     fetch('http://127.0.0.1:5000/fetch-all', {
-    //         method: 'POST',
-    //         mode: 'cors',
-    //         headers: {
-    //             'Content-Type': 'application/json'
-    //         },
-    //         body: JSON.stringify({
-    //             user: 'affafu'
-    //         })
-    //     })
-    //     .then(resp=>{
-    //         if(resp.ok){
-    //             return resp.json()
-    //         }else{
-    //             throw resp
-    //         }
-    //     })
-    //     .then(({note}) => {
-    //         console.log(note)
-    //     })
-    //     .catch(errData=>errData.json().then(({errorMessage})=>console.log(errorMessage)))
-    // }
 }
