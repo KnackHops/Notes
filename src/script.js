@@ -822,8 +822,6 @@ const noteBodyPreview = (rawId, handlerFunc) => {
         }
     });
 
-    console.log(noteParti)
-
     let newBody = JSON.parse(noteParti[0].body);
 
     newDelta = linkCleaning(newBody.ops);
@@ -2147,7 +2145,7 @@ const indexedDBGetData = (oSName, id) => {
 
 const indexedDBDel = () => {
     // delete database
-
+    localStorage.removeItem(_USERLOGGEDKEY)
     var request = indexedDB.deleteDatabase(_INDEXEDDBNAME);
 
     request.onsuccess = e => {console.log("there ya go")};
