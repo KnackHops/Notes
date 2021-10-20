@@ -180,7 +180,7 @@ const logInUserValidate = (localUserID = null) => {
                     //         userid: localUserID
                     //     })
                     // })
-                    fetch(`http://127.0.0.1:5000/user/profile-date-get/?userid=${localUserID}`, {
+                    fetch(`https://notesilly.herokuapp.com/?userid=${localUserID}`, {
                         method: 'GET',
                         mode: 'cors'
                     })
@@ -194,7 +194,7 @@ const logInUserValidate = (localUserID = null) => {
                     .then(userProfileGet => resolve(userProfileGet))
                     .catch(errData => errData.json().then(({errorMessage}) =>reject({errorMessage})))
                 }else{
-                    fetch('http://127.0.0.1:5000/user/login', {
+                    fetch('https://notesilly.herokuapp.com/user/login', {
                         method: 'POST',
                         mode: 'cors',
                         headers: {
@@ -242,7 +242,7 @@ const logInUserValidate = (localUserID = null) => {
                             //     },
                             //     body: JSON.stringify({userid})
                             // })
-                            fetch(`http://127.0.0.1:5000/user/user-get?userid=${userid}`, {
+                            fetch(`https://notesilly.herokuapp.com/user/user-get?userid=${userid}`, {
                                 method: 'GET',
                                 mode: 'cors'
                             })
@@ -285,7 +285,7 @@ const logInUserValidate = (localUserID = null) => {
                         //     },
                         //     body: JSON.stringify({userid})
                         // })
-                        fetch(`http://127.0.0.1:5000/user/user-get?userid=${userid}`,{
+                        fetch(`https://notesilly.herokuapp.com/user/user-get?userid=${userid}`,{
                             method: 'GET',
                             mode: 'cors'
                         })
@@ -430,7 +430,7 @@ const passwordCheck = pass => {
 
 const registerUser = user => {
     return new Promise((resolve, reject) => {
-        fetch('http://127.0.0.1:5000/user/register',{
+        fetch('https://notesilly.herokuapp.com/user/register',{
             method: 'POST',
             mode: 'cors',
             headers: {
@@ -500,7 +500,7 @@ const saveEditableAndLocked = (isEditableChk, prevEditableChk, isLockedChk, prev
             let id = Number(currentOpenID.replace(whichKind,""));
         
             if(whichKind === "note"){
-                fetch('http://127.0.0.1:5000/update-edit-lock',
+                fetch('https://notesilly.herokuapp.com/update-edit-lock',
                 {
                     method: 'PUT',
                     mode: 'cors',
@@ -589,7 +589,7 @@ const saveNote = () => {
             closeBtnClicked(".noteMenu", false);
         })
     }else{
-        fetch('http://127.0.0.1:5000/save-note', {
+        fetch('https://notesilly.herokuapp.com/save-note', {
             method: 'POST',
             mode: 'cors',
             headers: {
@@ -629,7 +629,7 @@ const editNote = () => {
                 if(edited){
                     new_note.id = id
                     new_note.username = currentUser.username;
-                    fetch('http://127.0.0.1:5000/edit',{
+                    fetch('https://notesilly.herokuapp.com/edit',{
                     method: 'PUT',
                     mode: 'cors',
                     headers: {
@@ -706,7 +706,7 @@ const deleteNote = () => {
 
     if(id.indexOf("note")==0){
         id = Number(id.replace("note",""));
-        fetch(`http://127.0.0.1:5000/delete?id=${id}&username=${currentUser.username}`,{
+        fetch(`https://notesilly.herokuapp.com/delete?id=${id}&username=${currentUser.username}`,{
             method: 'DELETE',
             mode: 'cors',
             headers: {
@@ -905,7 +905,7 @@ const nodeLoad = (altDbase = null) => {
 
             let mainDBPromise = new Promise((resolve, reject) => {
                 if(currentUser){
-                    fetch(`http://127.0.0.1:5000/fetch-all?username=${currentUser.username}`,{
+                    fetch(`https://notesilly.herokuapp.com/fetch-all?username=${currentUser.username}`,{
                         method: 'GET',
                         mode: 'cors'
                     })
@@ -1663,7 +1663,7 @@ const saveProfile = () => {
     // updateUserDBASE(currentUser,'mobile',userMobile);
 
     if('pfp' in user || 'nickname' in user || 'mobile' in user){
-        fetch('http://127.0.0.1:5000/user/user-save', {
+        fetch('https://notesilly.herokuapp.com/user/user-save', {
             method: 'POST',
             mode: 'cors',
             headers: {
